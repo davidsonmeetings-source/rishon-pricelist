@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#0f6e56">
+<title>מחירון דירות — ראשון לציון</title>
+<style>
+  :root{
+    --bg:#f4f5f3; --card:#ffffff; --line:rgba(0,0,0,.10); --line2:rgba(0,0,0,.18);
+    --tx:#1b1b19; --tx2:#6a6a64; --tx3:#9a9a93;
+    --avail:#0f6e56; --avail-bg:#e1f5ee; --hold:#854f0b; --hold-bg:#faeeda;
+    --sold:#a32d2d; --sold-bg:#fceaea; --info:#185fa5; --info-bg:#e6f1fb;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  body{margin:0; background:var(--bg); color:var(--tx);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Noto Sans Hebrew",sans-serif;
+    font-size:15px; line-height:1.5;}
+  .wrap{max-width:560px; margin:0 auto; padding:12px 12px 40px;}
+  header{text-align:center; padding:6px 0 12px;}
+  header h1{font-size:18px; font-weight:600; margin:0;}
+  header .sub{font-size:12px; color:var(--tx2); margin-top:2px;}
+  .panel{background:#ececea; border-radius:14px; padding:10px; margin-bottom:10px;}
+  .seg{display:flex; gap:6px; margin-bottom:8px;}
+  .seg:last-child{margin-bottom:0;}
+  .seg button{flex:1; padding:8px 0; font-size:13px; font-family:inherit; color:var(--tx);
+    background:#fff; border:1px solid var(--line); border-radius:9px; cursor:pointer;}
+  .seg button.on{background:var(--info-bg); color:var(--info); border-color:#a9cdf0; font-weight:600;}
+  .seg select,.seg input{flex:1; padding:8px 10px; font-size:13px; font-family:inherit; color:var(--tx);
+    background:#fff; border:1px solid var(--line); border-radius:9px; min-width:0;}
+  .stats{display:flex; gap:6px; margin-bottom:10px;}
+  .stat{flex:1; background:#ececea; border-radius:10px; padding:7px; text-align:center;}
+  .stat .lbl{font-size:12px; color:var(--tx2);}
+  .stat .num{font-size:19px; font-weight:600;}
+  .list{display:flex; flex-direction:column; gap:5px;}
+  .row{background:var(--card); border:1px solid var(--line); border-radius:10px; overflow:hidden;}
+  .row .head{padding:9px 11px; display:flex; align-items:center; justify-content:space-between;
+    cursor:pointer; border-right:3px solid var(--line2);}
+  .row.avail .head{border-right-color:var(--avail);}
+  .row.hold .head{border-right-color:var(--hold);}
+  .row.sold .head{border-right-color:var(--sold);}
+  .ttl{font-size:15px; font-weight:600; line-height:1.3;}
+  .meta{font-size:12px; color:var(--tx2);}
+  .price{font-size:15px; font-weight:600; text-align:left; white-space:nowrap;}
+  .pill{display:inline-block; margin-top:2px; font-size:11px; padding:2px 9px; border-radius:7px;}
+  .pill.avail{background:var(--avail-bg); color:var(--avail);}
+  .pill.hold{background:var(--hold-bg); color:var(--hold);}
+  .pill.sold{background:var(--sold-bg); color:var(--sold);}
+  .pill.none{background:#eee; color:#777;}
+  .cap{display:inline-block; font-size:10px; padding:0 6px; border-radius:6px;
+    background:var(--info-bg); color:var(--info); margin-right:5px; vertical-align:1px;}
+  .det{background:#f6f6f4; border-top:1px solid var(--line); padding:9px 12px; font-size:13px;}
+  .det .dr{display:flex; justify-content:space-between; padding:3px 0;}
+  .det .dr span:first-child{color:var(--tx2);}
+  .det .dr span:last-child{font-weight:600;}
+  .msg{text-align:center; color:var(--tx2); padding:24px 10px; font-size:14px;}
+  .foot{text-align:center; color:var(--tx3); font-size:11px; margin-top:16px; line-height:1.6;}
+  .banner{background:var(--hold-bg); color:var(--hold); border-radius:10px; padding:8px 11px;
+    font-size:12px; margin-bottom:10px; text-align:center;}
+  .refresh{display:block; margin:14px auto 0; padding:7px 16px; font-size:13px; font-family:inherit;
+    background:#fff; border:1px solid var(--line); border-radius:9px; color:var(--tx); cursor:pointer;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>מחירון דירות — ראשון לציון</h1>
+    <div class="sub" id="updated">טוען נתונים…</div>
+  </header>
+
+  <div id="banner"></div>
+
+  <div class="panel">
+    <div class="seg" id="bldSeg">
+      <button data-bld="all" class="on">שני הבניינים</button>
+      <button data-bld="1">בניין 1</button>
+      <button data-bld="2">מגדל 20 ק'</button>
+    </div>
+    <div class="seg" id="statSeg">
+      <button data-st="all" class="on">הכל</button>
+      <button data-st="avail">פנוי</button>
+      <button data-st="hold">שמור</button>
+      <button data-st="sold">נמכר</button>
+    </div>
+    <div class="seg">
+      <select id="rooms">
+        <option value="all">כל החדרים</option>
+        <option value="2">2 חדרים</option>
+        <option value="3">3 חדרים</option>
+        <option value="4">4 חדרים</option>
+        <option value="5">5 חדרים</option>
+      </select>
+      <input id="q" placeholder="חיפוש מס' / טיפוס">
+    </div>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><div class="lbl">פנוי</div><div class="num" id="cAvail" style="color:var(--avail)">0</div></div>
+    <div class="stat"><div class="lbl">שמור</div><div class="num" id="cHold" style="color:var(--hold)">0</div></div>
+    <div class="stat"><div class="lbl">נמכר</div><div class="num" id="cSold" style="color:var(--sold)">0</div></div>
+  </div>
+
+  <div class="list" id="list"><div class="msg">טוען…</div></div>
+  <button class="refresh" id="refreshBtn">רענון נתונים</button>
+  <div class="foot" id="foot"></div>
+</div>
+
+<script>
+/* ===== הגדרות — ערוך כאן בלבד ===== */
+var SHEET_ID = "1sDH0j-gkiaqojtznY_FnIq8SHj0lzPAQVsRcBNuOM44";
+var GID      = "815985993";
+var BUILDING1_NAME = "בניין 1";
+var BUILDING2_NAME = "מגדל 20 ק'";
+/* טבלת מדרגות מס רכישה (לחישוב הפירוט) */
+var TAX_SINGLE = [[0,1978745,0],[1978745,2347040,0.035],[2347040,6055070,0.05],[6055070,20183565,0.08],[20183565,1e12,0.10]];
+var TAX_INVEST = [[0,6055070,0.08],[6055070,1e12,0.10]];
+/* =================================== */
+
+var GVIZ = "https://docs.google.com/spreadsheets/d/"+SHEET_ID+"/gviz/tq?tqx=out:csv&gid="+GID;
+
+var DATA = [], bld="all", filter="all", open={}, hasStatusCol=false;
+
+function parseCSV(text){
+  var rows=[], row=[], cur="", q=false;
+  for(var i=0;i<text.length;i++){
+    var ch=text[i];
+    if(q){
+      if(ch=='"'){ if(text[i+1]=='"'){cur+='"';i++;} else q=false; }
+      else cur+=ch;
+    }else{
+      if(ch=='"') q=true;
+      else if(ch==','){ row.push(cur); cur=""; }
+      else if(ch=='\n'){ row.push(cur); rows.push(row); row=[]; cur=""; }
+      else if(ch=='\r'){}
+      else cur+=ch;
+    }
+  }
+  if(cur.length||row.length){ row.push(cur); rows.push(row); }
+  return rows;
+}
+function norm(s){ return (s||"").replace(/"/g,"").replace(/\s+/g," ").trim(); }
+function toNum(s){ var d=(s||"").replace(/[^\d]/g,""); return d?parseInt(d,10):0; }
+
+/* בונה מיפוי עמודות לפי שמות הכותרת */
+function mapHeader(cells){
+  var m={};
+  for(var i=0;i<cells.length;i++){
+    var h=norm(cells[i]);
+    if(!h) continue;
+    if(h.indexOf("סוג")>=0 && h.indexOf("קומה")>=0) m.floorType=i;
+    else if(h.indexOf("קומה")>=0 && m.floor==null) m.floor=i;
+    else if(h.indexOf("יחיד")>=0) m.unit=i;
+    else if(h.indexOf("טיפוס")>=0) m.type=i;
+    else if(h.indexOf("כיוון")>=0) m.dir=i;
+    else if(h.indexOf("חדר")>=0) m.rooms=i;
+    else if(h.indexOf("פלדלת")>=0 || h.indexOf("שטח")>=0) m.size=i;
+    else if(h.indexOf("מרפסת")>=0) m.balcony=i;
+    else if(h.indexOf("חני")>=0) m.parking=i;
+    else if(h.indexOf("אמדן")>=0 || h.indexOf("מחיר")>=0) m.price=i;
+    else if(h.indexOf("סטטוס")>=0 || h.indexOf("סטאטוס")>=0) m.status=i;
+  }
+  return m;
+}
+function isHeaderRow(cells){
+  var joined=cells.map(norm).join(" ");
+  return joined.indexOf("יחיד")>=0 && (joined.indexOf("אמדן")>=0 || joined.indexOf("טיפוס")>=0);
+}
+function statusKey(s){
+  s=norm(s);
+  if(s.indexOf("נמכר")>=0) return "sold";
+  if(s.indexOf("שמור")>=0 || s.indexOf("שריון")>=0) return "hold";
+  if(s.indexOf("פנוי")>=0) return "avail";
+  return null;
+}
+
+function parseSheet(text){
+  var rows=parseCSV(text);
+  var out=[], map=null, building=1;
+  hasStatusCol=false;
+  for(var r=0;r<rows.length;r++){
+    var cells=rows[r];
+    var joined=cells.map(norm).join(" ");
+    if(joined.indexOf("מגדל")>=0) building=2;        /* מעבר לבניין השני */
+    if(isHeaderRow(cells)){ map=mapHeader(cells); if(map.status!=null) hasStatusCol=true; continue; }
+    if(!map) continue;
+    var unitRaw=norm(cells[map.unit]);
+    var price=toNum(cells[map.price]);
+    if(!/^\d+$/.test(unitRaw) || price<100000) continue;   /* שורת דירה אמיתית בלבד */
+    var ft=map.floorType!=null?norm(cells[map.floorType]):"";
+    var st=map.status!=null?statusKey(cells[map.status]):null;
+    out.push({
+      bld:building, floor:toNum(cells[map.floor]), unit:parseInt(unitRaw,10),
+      type:norm(cells[map.type]), dir:norm(cells[map.dir]),
+      rooms:toNum(cells[map.rooms]), size:toNum(cells[map.size]),
+      bal:toNum(cells[map.balcony]), pk:toNum(cells[map.parking]),
+      price:price, cap:ft.indexOf("קפסולה")>=0, status:st
+    });
+  }
+  return out;
+}
+
+function bracket(p,t){ var s=0; for(var i=0;i<t.length;i++){ if(p>t[i][0]) s+=(Math.min(p,t[i][1])-t[i][0])*t[i][2]; } return s; }
+function nis(n){ return "₪"+Math.round(n).toLocaleString("he-IL"); }
+
+var ST={avail:{lb:"פנוי"},hold:{lb:"שמור"},sold:{lb:"נמכר"}};
+
+function render(){
+  var rooms=document.getElementById("rooms").value;
+  var query=document.getElementById("q").value.trim().toLowerCase();
+  var scope=DATA.filter(function(d){return bld=="all"||String(d.bld)==bld;});
+  document.getElementById("cAvail").textContent=scope.filter(function(d){return d.status=="avail";}).length;
+  document.getElementById("cHold").textContent =scope.filter(function(d){return d.status=="hold";}).length;
+  document.getElementById("cSold").textContent =scope.filter(function(d){return d.status=="sold";}).length;
+
+  var rows=scope.filter(function(d){
+    if(filter!="all" && d.status!=filter) return false;
+    if(rooms!="all" && String(d.rooms)!=rooms) return false;
+    if(query && (d.unit+" "+d.type).toLowerCase().indexOf(query)<0) return false;
+    return true;
+  });
+  var list=document.getElementById("list");
+  if(!rows.length){ list.innerHTML='<div class="msg">אין דירות שמתאימות לסינון</div>'; return; }
+  list.innerHTML=rows.map(function(d){
+    var id=d.bld+"-"+d.unit;
+    var stk=d.status||"none";
+    var pill=d.status?('<span class="pill '+stk+'">'+ST[d.status].lb+'</span>'):'<span class="pill none">—</span>';
+    var bn=d.bld==1?BUILDING1_NAME:BUILDING2_NAME;
+    var cap=d.cap?'<span class="cap">קפסולה</span>':'';
+    var head='<div class="head" onclick="tog(\''+id+'\')">'
+      +'<div style="min-width:0"><div class="ttl">דירה '+d.unit+' · '+d.type+cap+'</div>'
+      +'<div class="meta">'+bn+' · ק.'+d.floor+' · '+d.rooms+' חד\' · '+d.size+' מ"ר · '+d.dir+'</div></div>'
+      +'<div><div class="price">'+nis(d.price)+'</div>'+pill+'</div></div>';
+    var det='';
+    if(open[id]){
+      det='<div class="det">'
+        +dr("מרפסת",d.bal+' מ"ר')+dr("חניות",d.pk)
+        +dr("הון עצמי 20%",nis(d.price*0.2))
+        +dr('שכ"ט עו"ד 1.1%',nis(d.price*0.011))
+        +dr('שכ"ט עו"ד תשלום ראשון 0.35%',nis(d.price*0.0035))
+        +dr("מס רכישה — דירה יחידה",nis(bracket(d.price,TAX_SINGLE)))
+        +dr("מס רכישה — דירה להשקעה",nis(bracket(d.price,TAX_INVEST)))
+        +'</div>';
+    }
+    return '<div class="row '+stk+'">'+head+det+'</div>';
+  }).join("");
+}
+function dr(k,v){ return '<div class="dr"><span>'+k+'</span><span>'+v+'</span></div>'; }
+function tog(id){ open[id]=!open[id]; render(); }
+
+function bindSeg(segId,setter){
+  document.getElementById(segId).addEventListener("click",function(e){
+    var b=e.target.closest("button"); if(!b) return;
+    [].forEach.call(this.querySelectorAll("button"),function(x){x.classList.remove("on");});
+    b.classList.add("on"); setter(b); render();
+  });
+}
+bindSeg("bldSeg",function(b){ bld=b.getAttribute("data-bld"); });
+bindSeg("statSeg",function(b){ filter=b.getAttribute("data-st"); });
+document.getElementById("rooms").addEventListener("change",render);
+document.getElementById("q").addEventListener("input",render);
+document.getElementById("refreshBtn").addEventListener("click",load);
+
+function load(){
+  document.getElementById("updated").textContent="טוען נתונים…";
+  fetch(GVIZ+"&_="+(new Date().getTime()))
+    .then(function(r){ if(!r.ok) throw new Error("HTTP "+r.status); return r.text(); })
+    .then(function(t){
+      DATA=parseSheet(t);
+      var now=new Date();
+      document.getElementById("updated").textContent="עודכן "+now.toLocaleTimeString("he-IL",{hour:"2-digit",minute:"2-digit"})+" · "+DATA.length+" דירות";
+      document.getElementById("banner").innerHTML = hasStatusCol ? "" :
+        '<div class="banner">לתצוגת פנוי/שמור/נמכר — הוסיפו עמודת "סטטוס" לגיליון. כרגע מוצג המידע ללא סטטוס.</div>';
+      document.getElementById("foot").innerHTML='נתונים חיים מתוך הגיליון של דנה וחופית · צפייה בלבד';
+      render();
+    })
+    .catch(function(e){
+      document.getElementById("updated").textContent="שגיאה בטעינה";
+      document.getElementById("list").innerHTML='<div class="msg">לא הצלחנו לטעון את הנתונים.<br>ודאו שהגיליון משותף כ"כל מי שיש לו הקישור — צופה".<br><small>'+e.message+'</small></div>';
+    });
+}
+load();
+document.addEventListener("visibilitychange",function(){ if(!document.hidden) load(); });
+</script>
+</body>
+</html>
