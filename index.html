@@ -131,7 +131,7 @@
         <span>פס תחתון:</span>
         <span><i class="ti ti-minus" style="color:var(--avail-bd)"></i> פנוי</span>
         <span><i class="ti ti-minus" style="color:var(--hold-bd)"></i> שמור</span>
-        <span><i class="ti ti-minus" style="color:var(--sold-bd)"></i> נמכר</span>
+        <span><i class="ti ti-minus" style="color:var(--sold-bd)"></i> תפוס</span>
       </div>
     </div>
     <div class="sel hide" id="sel"></div>
@@ -151,7 +151,7 @@
         <button data-st="all" class="on">הכל</button>
         <button data-st="avail">פנוי</button>
         <button data-st="hold">שמור</button>
-        <button data-st="sold">נמכר</button>
+        <button data-st="sold">תפוס</button>
       </div>
       <div class="seg">
         <select id="rooms">
@@ -167,7 +167,7 @@
     <div class="stats">
       <div class="stat"><div class="lbl">פנוי</div><div class="num" id="cAvail" style="color:var(--avail)">0</div></div>
       <div class="stat"><div class="lbl">שמור</div><div class="num" id="cHold" style="color:var(--hold)">0</div></div>
-      <div class="stat"><div class="lbl">נמכר</div><div class="num" id="cSold" style="color:var(--sold)">0</div></div>
+      <div class="stat"><div class="lbl">תפוס</div><div class="num" id="cSold" style="color:var(--sold)">0</div></div>
     </div>
     <div class="list" id="list"></div>
   </div>
@@ -183,13 +183,16 @@ var GID      = "815985993";
 var BUILDING1_NAME = "בניין 1";
 var BUILDING2_NAME = "מגדל 20 ק'";
 
-/* מיקום העמודות בגיליון (0 = העמודה הראשונה A).
-   חשוב: אין לשנות/להוסיף/למחוק עמודות בגיליון — אחרת יש לעדכן את המספרים כאן.
-   בניין 1: A..P (0..15)  |  מגדל: R..AG (17..32)  |  ערכי סטטוס: פנוי / שמור / נמכר */
-var B1 = {floor:1, unit:2, type:3, dir:4, rooms:5, size:6, bal:7, pk:8,
-          price:9, equity:10, law1:11, law2:12, taxS:13, taxI:14, status:15};
-var B2 = {floor:17, ftype:18, unit:19, type:20, dir:21, rooms:22, size:23, bal:24, pk:25,
-          price:26, equity:27, law1:28, law2:29, taxS:30, taxI:31, status:32};
+/* מיפוי לפי שורת "מזהה לקלוד" בגיליון — לכל עמודה ID יציב, כך ששינוי/הוספת עמודות לא שובר.
+   בניין 1: IDs 1..15  |  מגדל: IDs 101..116.  ערכי סטטוס: פנוי / שמור / תפוס */
+var ID_ROW_LABEL = "מזהה";
+var IDB1 = {floor:1, unit:2, type:3, dir:4, rooms:5, size:6, bal:7, pk:8,
+            price:9, equity:10, law1:11, law2:12, taxS:13, taxI:14, status:15};
+var IDB2 = {floor:101, ftype:102, unit:103, type:104, dir:105, rooms:106, size:107, bal:108, pk:109,
+            price:110, equity:111, law1:112, law2:113, taxS:114, taxI:115, status:116};
+/* גיבוי לפי מיקום קבוע, אם שורת המזהה חסרה */
+var B1_FB = {floor:1, unit:2, type:3, dir:4, rooms:5, size:6, bal:7, pk:8, price:9, equity:10, law1:11, law2:12, taxS:13, taxI:14, status:15};
+var B2_FB = {floor:21, ftype:22, unit:23, type:24, dir:25, rooms:26, size:27, bal:28, pk:29, price:30, equity:31, law1:32, law2:33, taxS:34, taxI:35, status:36};
 /* ================================================ */
 
 var GVIZ = "https://docs.google.com/spreadsheets/d/"+SHEET_ID+"/gviz/tq?tqx=out:csv&gid="+GID;
@@ -214,7 +217,7 @@ function cell(r,i){ return (i!=null && r[i]!=null) ? String(r[i]).trim() : ""; }
 function toNum(s){ var d=(s||"").replace(/[^\d]/g,""); return d?parseInt(d,10):0; }
 function statusKey(s){
   s=(s||"").replace(/"/g,"").trim();
-  if(s.indexOf("נמכר")>=0) return "sold";
+  if(s.indexOf("תפוס")>=0 || s.indexOf("נמכר")>=0) return "sold";
   if(s.indexOf("שמור")>=0 || s.indexOf("שריון")>=0) return "hold";
   if(s.indexOf("פנוי")>=0) return "avail";
   return null;
@@ -233,12 +236,32 @@ function extract(r, M, bldNum){
     status: M.status!=null ? statusKey(cell(r,M.status)) : null
   };
 }
+/* בונה id->עמודה משורת "מזהה לקלוד" */
+function buildIdCol(rows){
+  for(var i=0;i<rows.length;i++){
+    if(cell(rows[i],0).indexOf(ID_ROW_LABEL)>=0){
+      var map={};
+      for(var j=0;j<rows[i].length;j++){ var v=cell(rows[i],j); if(/^\d+$/.test(v)) map[+v]=j; }
+      return map;
+    }
+  }
+  return null;
+}
+function resolveMap(idMap, id2col){
+  var m={}; for(var k in idMap){ var c=id2col[idMap[k]]; m[k]=(c==null?null:c); } return m;
+}
+function colsOk(m){ return m && m.unit!=null && m.price!=null; }
 function parseSheet(text){
   var rows=parseCSV(text), out=[];
   hasStatus=false;
+  var id2col=buildIdCol(rows);
+  var m1=id2col?resolveMap(IDB1,id2col):null;
+  var m2=id2col?resolveMap(IDB2,id2col):null;
+  if(!colsOk(m1)) m1=B1_FB;
+  if(!colsOk(m2)) m2=B2_FB;
   for(var i=0;i<rows.length;i++){
-    var a=extract(rows[i],B1,1); if(a){ out.push(a); if(a.status) hasStatus=true; }
-    var b=extract(rows[i],B2,2); if(b){ out.push(b); if(b.status) hasStatus=true; }
+    var a=extract(rows[i],m1,1); if(a){ out.push(a); if(a.status) hasStatus=true; }
+    var b=extract(rows[i],m2,2); if(b){ out.push(b); if(b.status) hasStatus=true; }
   }
   var capFloors={};
   out.forEach(function(d){ if(d.cap) capFloors[d.bld+"-"+d.floor]=true; });
@@ -247,7 +270,7 @@ function parseSheet(text){
 }
 
 function nis(n){ return "₪"+Math.round(n).toLocaleString("he-IL"); }
-var ST={avail:{lb:"פנוי"},hold:{lb:"שמור"},sold:{lb:"נמכר"}};
+var ST={avail:{lb:"פנוי"},hold:{lb:"שמור"},sold:{lb:"תפוס"}};
 function clr(status){
   var k=status||"none";
   return {bg:"var(--"+k+"-bg)", bd:"var(--"+k+"-bd)", tx:"var(--"+(status||"none")+(status?"":"-tx")+")"};
