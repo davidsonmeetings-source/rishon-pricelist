@@ -53,7 +53,7 @@
   .det .dr{display:flex; justify-content:space-between; padding:3px 0;}
   .det .dr span:first-child{color:var(--tx2);}
   .det .dr span:last-child{font-weight:600;}
-  .msg{text-align:center; color:var(--tx2); padding:24px 10px; font-size:14px;}
+  .msg{text-align:center; color:var(--tx2); padding:24px 10px; font-size:14px; line-height:1.7;}
   .foot{text-align:center; color:var(--tx3); font-size:11px; margin-top:16px; line-height:1.6;}
   .banner{background:var(--hold-bg); color:var(--hold); border-radius:10px; padding:8px 11px;
     font-size:12px; margin-bottom:10px; text-align:center;}
@@ -106,19 +106,24 @@
 </div>
 
 <script>
-/* ===== הגדרות — ערוך כאן בלבד ===== */
+/* ============ הגדרות — ערוך כאן בלבד ============ */
 var SHEET_ID = "1sDH0j-gkiaqojtznY_FnIq8SHj0lzPAQVsRcBNuOM44";
 var GID      = "815985993";
 var BUILDING1_NAME = "בניין 1";
 var BUILDING2_NAME = "מגדל 20 ק'";
-/* טבלת מדרגות מס רכישה (לחישוב הפירוט) */
-var TAX_SINGLE = [[0,1978745,0],[1978745,2347040,0.035],[2347040,6055070,0.05],[6055070,20183565,0.08],[20183565,1e12,0.10]];
-var TAX_INVEST = [[0,6055070,0.08],[6055070,1e12,0.10]];
-/* =================================== */
+
+/* מיקום העמודות בגיליון (0 = העמודה הראשונה).
+   אם דנה תוסיף/תמחק עמודה — זה המקום היחיד לעדכן. */
+var B1 = {floor:1, unit:2, type:3, dir:4, rooms:5, size:6, bal:7, pk:8,
+          price:9, equity:10, law1:11, law2:12, taxS:13, taxI:14, status:15};
+var B2 = {floor:16, ftype:17, unit:18, type:19, dir:20, rooms:21, size:22, bal:23, pk:24,
+          price:25, equity:26, law1:27, law2:28, taxS:29, taxI:30, status:31};
+/* עמודת הסטטוס: B1 בעמודה 15 (אחרי "מס רכישה להשקעה" של בניין 1),
+   B2 בעמודה 31 (אחרי "מס רכישה להשקעה" של המגדל). ערכים: פנוי / שמור / נמכר. */
+/* ================================================ */
 
 var GVIZ = "https://docs.google.com/spreadsheets/d/"+SHEET_ID+"/gviz/tq?tqx=out:csv&gid="+GID;
-
-var DATA = [], bld="all", filter="all", open={}, hasStatusCol=false;
+var DATA = [], bld="all", filter="all", open={}, hasStatus=false;
 
 function parseCSV(text){
   var rows=[], row=[], cur="", q=false;
@@ -138,70 +143,45 @@ function parseCSV(text){
   if(cur.length||row.length){ row.push(cur); rows.push(row); }
   return rows;
 }
-function norm(s){ return (s||"").replace(/"/g,"").replace(/\s+/g," ").trim(); }
+function cell(r,i){ return (i!=null && r[i]!=null) ? String(r[i]).trim() : ""; }
 function toNum(s){ var d=(s||"").replace(/[^\d]/g,""); return d?parseInt(d,10):0; }
-
-/* בונה מיפוי עמודות לפי שמות הכותרת */
-function mapHeader(cells){
-  var m={};
-  for(var i=0;i<cells.length;i++){
-    var h=norm(cells[i]);
-    if(!h) continue;
-    if(h.indexOf("סוג")>=0 && h.indexOf("קומה")>=0) m.floorType=i;
-    else if(h.indexOf("קומה")>=0 && m.floor==null) m.floor=i;
-    else if(h.indexOf("יחיד")>=0) m.unit=i;
-    else if(h.indexOf("טיפוס")>=0) m.type=i;
-    else if(h.indexOf("כיוון")>=0) m.dir=i;
-    else if(h.indexOf("חדר")>=0) m.rooms=i;
-    else if(h.indexOf("פלדלת")>=0 || h.indexOf("שטח")>=0) m.size=i;
-    else if(h.indexOf("מרפסת")>=0) m.balcony=i;
-    else if(h.indexOf("חני")>=0) m.parking=i;
-    else if(h.indexOf("אמדן")>=0 || h.indexOf("מחיר")>=0) m.price=i;
-    else if(h.indexOf("סטטוס")>=0 || h.indexOf("סטאטוס")>=0) m.status=i;
-  }
-  return m;
-}
-function isHeaderRow(cells){
-  var joined=cells.map(norm).join(" ");
-  return joined.indexOf("יחיד")>=0 && (joined.indexOf("אמדן")>=0 || joined.indexOf("טיפוס")>=0);
-}
 function statusKey(s){
-  s=norm(s);
+  s=(s||"").replace(/"/g,"").trim();
   if(s.indexOf("נמכר")>=0) return "sold";
   if(s.indexOf("שמור")>=0 || s.indexOf("שריון")>=0) return "hold";
   if(s.indexOf("פנוי")>=0) return "avail";
   return null;
 }
 
+function extract(r, M, bldNum){
+  var unit=cell(r,M.unit), price=toNum(cell(r,M.price));
+  if(!/^\d+$/.test(unit) || price<100000) return null;   /* שורת דירה אמיתית בלבד */
+  var ft = M.ftype!=null ? cell(r,M.ftype) : "";
+  return {
+    bld:bldNum, floor:toNum(cell(r,M.floor)), unit:parseInt(unit,10),
+    type:cell(r,M.type), dir:cell(r,M.dir), rooms:toNum(cell(r,M.rooms)),
+    size:toNum(cell(r,M.size)), bal:toNum(cell(r,M.bal)), pk:toNum(cell(r,M.pk)),
+    price:price, equity:toNum(cell(r,M.equity)), law1:toNum(cell(r,M.law1)),
+    law2:toNum(cell(r,M.law2)), taxS:toNum(cell(r,M.taxS)), taxI:toNum(cell(r,M.taxI)),
+    cap: ft.indexOf("קפסולה")>=0,
+    status: M.status!=null ? statusKey(cell(r,M.status)) : null
+  };
+}
 function parseSheet(text){
-  var rows=parseCSV(text);
-  var out=[], map=null, building=1;
-  hasStatusCol=false;
-  for(var r=0;r<rows.length;r++){
-    var cells=rows[r];
-    var joined=cells.map(norm).join(" ");
-    if(joined.indexOf("מגדל")>=0) building=2;        /* מעבר לבניין השני */
-    if(isHeaderRow(cells)){ map=mapHeader(cells); if(map.status!=null) hasStatusCol=true; continue; }
-    if(!map) continue;
-    var unitRaw=norm(cells[map.unit]);
-    var price=toNum(cells[map.price]);
-    if(!/^\d+$/.test(unitRaw) || price<100000) continue;   /* שורת דירה אמיתית בלבד */
-    var ft=map.floorType!=null?norm(cells[map.floorType]):"";
-    var st=map.status!=null?statusKey(cells[map.status]):null;
-    out.push({
-      bld:building, floor:toNum(cells[map.floor]), unit:parseInt(unitRaw,10),
-      type:norm(cells[map.type]), dir:norm(cells[map.dir]),
-      rooms:toNum(cells[map.rooms]), size:toNum(cells[map.size]),
-      bal:toNum(cells[map.balcony]), pk:toNum(cells[map.parking]),
-      price:price, cap:ft.indexOf("קפסולה")>=0, status:st
-    });
+  var rows=parseCSV(text), out=[];
+  hasStatus=false;
+  for(var i=0;i<rows.length;i++){
+    var a=extract(rows[i],B1,1); if(a){ out.push(a); if(a.status) hasStatus=true; }
+    var b=extract(rows[i],B2,2); if(b){ out.push(b); if(b.status) hasStatus=true; }
   }
+  /* תווית "קפסולה" היא תא ממוזג — מסומנת רק בדירה הראשונה בקומה. נחיל על כל הקומה. */
+  var capFloors={};
+  out.forEach(function(d){ if(d.cap) capFloors[d.bld+"-"+d.floor]=true; });
+  out.forEach(function(d){ if(capFloors[d.bld+"-"+d.floor]) d.cap=true; });
   return out;
 }
 
-function bracket(p,t){ var s=0; for(var i=0;i<t.length;i++){ if(p>t[i][0]) s+=(Math.min(p,t[i][1])-t[i][0])*t[i][2]; } return s; }
 function nis(n){ return "₪"+Math.round(n).toLocaleString("he-IL"); }
-
 var ST={avail:{lb:"פנוי"},hold:{lb:"שמור"},sold:{lb:"נמכר"}};
 
 function render(){
@@ -221,8 +201,7 @@ function render(){
   var list=document.getElementById("list");
   if(!rows.length){ list.innerHTML='<div class="msg">אין דירות שמתאימות לסינון</div>'; return; }
   list.innerHTML=rows.map(function(d){
-    var id=d.bld+"-"+d.unit;
-    var stk=d.status||"none";
+    var id=d.bld+"-"+d.unit, stk=d.status||"none";
     var pill=d.status?('<span class="pill '+stk+'">'+ST[d.status].lb+'</span>'):'<span class="pill none">—</span>';
     var bn=d.bld==1?BUILDING1_NAME:BUILDING2_NAME;
     var cap=d.cap?'<span class="cap">קפסולה</span>':'';
@@ -234,11 +213,11 @@ function render(){
     if(open[id]){
       det='<div class="det">'
         +dr("מרפסת",d.bal+' מ"ר')+dr("חניות",d.pk)
-        +dr("הון עצמי 20%",nis(d.price*0.2))
-        +dr('שכ"ט עו"ד 1.1%',nis(d.price*0.011))
-        +dr('שכ"ט עו"ד תשלום ראשון 0.35%',nis(d.price*0.0035))
-        +dr("מס רכישה — דירה יחידה",nis(bracket(d.price,TAX_SINGLE)))
-        +dr("מס רכישה — דירה להשקעה",nis(bracket(d.price,TAX_INVEST)))
+        +dr("הון עצמי 20%",nis(d.equity))
+        +dr('שכ"ט עו"ד 1.1%',nis(d.law1))
+        +dr('שכ"ט עו"ד תשלום ראשון 0.35%',nis(d.law2))
+        +dr("מס רכישה — דירה יחידה", d.taxS?nis(d.taxS):"פטור")
+        +dr("מס רכישה — דירה להשקעה",nis(d.taxI))
         +'</div>';
     }
     return '<div class="row '+stk+'">'+head+det+'</div>';
@@ -266,10 +245,11 @@ function load(){
     .then(function(r){ if(!r.ok) throw new Error("HTTP "+r.status); return r.text(); })
     .then(function(t){
       DATA=parseSheet(t);
+      if(!DATA.length) throw new Error("לא זוהו שורות דירה");
       var now=new Date();
       document.getElementById("updated").textContent="עודכן "+now.toLocaleTimeString("he-IL",{hour:"2-digit",minute:"2-digit"})+" · "+DATA.length+" דירות";
-      document.getElementById("banner").innerHTML = hasStatusCol ? "" :
-        '<div class="banner">לתצוגת פנוי/שמור/נמכר — הוסיפו עמודת "סטטוס" לגיליון. כרגע מוצג המידע ללא סטטוס.</div>';
+      document.getElementById("banner").innerHTML = hasStatus ? "" :
+        '<div class="banner">להצגת פנוי/שמור/נמכר — מלאו את עמודת הסטטוס בגיליון (בניין 1: עמודה P · מגדל: עמודה AF).</div>';
       document.getElementById("foot").innerHTML='נתונים חיים מתוך הגיליון של דנה וחופית · צפייה בלבד';
       render();
     })
