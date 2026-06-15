@@ -130,7 +130,7 @@
       <div style="display:flex; gap:14px; align-items:center;">
         <span><i class="ti ti-minus" style="color:var(--avail-bd)"></i> פנוי</span>
         <span><span style="display:inline-block;width:15px;height:15px;border:1px solid var(--hold-bd);border-radius:3px;vertical-align:-3px;background:linear-gradient(to top right,transparent 44%,var(--hold-bd) 44%,var(--hold-bd) 56%,transparent 56%),linear-gradient(to bottom right,transparent 44%,var(--hold-bd) 44%,var(--hold-bd) 56%,transparent 56%),var(--hold-bg);"></span> שמור</span>
-        <span><span style="display:inline-block;width:15px;height:15px;border:1px solid var(--sold-bd);border-radius:3px;vertical-align:-3px;background:linear-gradient(to top right,transparent 44%,var(--sold-bd) 44%,var(--sold-bd) 56%,transparent 56%),linear-gradient(to bottom right,transparent 44%,var(--sold-bd) 44%,var(--sold-bd) 56%,transparent 56%),var(--sold-bg);"></span> תפוס</span>
+        <span><span style="display:inline-block;width:15px;height:15px;border:1px solid var(--sold-bd);border-radius:3px;vertical-align:-3px;background:linear-gradient(to top right,transparent 44%,var(--sold-bd) 44%,var(--sold-bd) 56%,transparent 56%),linear-gradient(to bottom right,transparent 44%,var(--sold-bd) 44%,var(--sold-bd) 56%,transparent 56%),var(--sold-bg);"></span> נמכר</span>
       </div>
     </div>
     <div class="sel hide" id="sel"></div>
@@ -150,7 +150,7 @@
         <button data-st="all" class="on">הכל</button>
         <button data-st="avail">פנוי</button>
         <button data-st="hold">שמור</button>
-        <button data-st="sold">תפוס</button>
+        <button data-st="sold">נמכר</button>
       </div>
       <div class="seg">
         <select id="rooms">
@@ -166,7 +166,7 @@
     <div class="stats">
       <div class="stat"><div class="lbl">פנוי</div><div class="num" id="cAvail" style="color:var(--avail)">0</div></div>
       <div class="stat"><div class="lbl">שמור</div><div class="num" id="cHold" style="color:var(--hold)">0</div></div>
-      <div class="stat"><div class="lbl">תפוס</div><div class="num" id="cSold" style="color:var(--sold)">0</div></div>
+      <div class="stat"><div class="lbl">נמכר</div><div class="num" id="cSold" style="color:var(--sold)">0</div></div>
     </div>
     <div class="list" id="list"></div>
   </div>
@@ -269,7 +269,7 @@ function parseSheet(text){
 }
 
 function nis(n){ return "₪"+Math.round(n).toLocaleString("he-IL"); }
-var ST={avail:{lb:"פנוי"},hold:{lb:"שמור"},sold:{lb:"תפוס"}};
+var ST={avail:{lb:"פנוי"},hold:{lb:"שמור"},sold:{lb:"נמכר"}};
 function clr(status){
   var k=status||"none";
   return {bg:"var(--"+k+"-bg)", bd:"var(--"+k+"-bd)", tx:"var(--"+(status||"none")+(status?"":"-tx")+")"};
