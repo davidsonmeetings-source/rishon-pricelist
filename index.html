@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 <meta name="theme-color" content="#0f6e56">
 <title>מחירון דירות — ראשון לציון</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&display=swap" rel="stylesheet">
 <style>
   :root{
     --bg:#f4f5f3; --card:#ffffff; --line:rgba(0,0,0,.10); --line2:rgba(0,0,0,.18);
@@ -20,7 +22,13 @@
     font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Noto Sans Hebrew",sans-serif;
     font-size:15px; line-height:1.5;}
   .wrap{max-width:560px; margin:0 auto; padding:12px 12px 40px;}
-  header{text-align:center; padding:6px 0 10px;}
+  .brand{display:flex; align-items:center; justify-content:space-between; gap:10px;
+    background:var(--card); border:1px solid var(--line); border-radius:14px; padding:10px 14px; margin-bottom:10px;}
+  .brand .logo-img{height:34px; width:auto; display:none;}
+  .brand-davidson{font-size:17px; font-weight:600; letter-spacing:.5px; color:var(--tx);}
+  .brand-davidson small{display:block; font-size:9px; font-weight:400; letter-spacing:3px; color:var(--tx2); margin-top:-2px;}
+  .brand-forever{font-family:'Dancing Script',cursive; font-size:30px; line-height:1; color:var(--avail);}
+  header{text-align:center; padding:2px 0 10px;}
   header h1{font-size:18px; font-weight:600; margin:0;}
   header .sub{font-size:12px; color:var(--tx2); margin-top:2px;}
   .seg{display:flex; gap:6px; margin-bottom:8px;}
@@ -83,6 +91,16 @@
 </head>
 <body>
 <div class="wrap">
+  <div class="brand">
+    <div>
+      <img class="logo-img" src="logo-davidson.png" alt="דוידסון" onload="this.style.display='inline';this.nextElementSibling.style.display='none';">
+      <span class="brand-davidson">דוידסון<small>נדל״ן</small></span>
+    </div>
+    <div>
+      <img class="logo-img" src="logo-forever.png" alt="Forever" onload="this.style.display='inline';this.nextElementSibling.style.display='none';">
+      <span class="brand-forever">Forever</span>
+    </div>
+  </div>
   <header>
     <h1>מחירון דירות — ראשון לציון</h1>
     <div class="sub" id="updated">טוען נתונים…</div>
@@ -101,10 +119,18 @@
       <button data-b="1" class="on">בניין 1</button>
       <button data-b="2">מגדל 20 ק'</button>
     </div>
-    <div class="legend">
-      <span><i class="ti ti-square-rounded-filled" style="color:var(--avail-bd)"></i> פנוי</span>
-      <span><i class="ti ti-square-rounded-filled" style="color:var(--hold-bd)"></i> שמור</span>
-      <span><i class="ti ti-square-rounded-filled" style="color:var(--sold-bd)"></i> נמכר</span>
+    <div class="legend" style="flex-direction:column; gap:5px;">
+      <div style="display:flex; gap:6px; align-items:center;">
+        <span>מילוי = גודל הדירה</span>
+        <span id="sizeScale" style="display:inline-flex; height:11px; width:140px; border-radius:4px; overflow:hidden; border:1px solid var(--line);"></span>
+        <span style="font-size:11px;">קטן→גדול</span>
+      </div>
+      <div style="display:flex; gap:14px;">
+        <span>פס תחתון:</span>
+        <span><i class="ti ti-minus" style="color:var(--avail-bd)"></i> פנוי</span>
+        <span><i class="ti ti-minus" style="color:var(--hold-bd)"></i> שמור</span>
+        <span><i class="ti ti-minus" style="color:var(--sold-bd)"></i> נמכר</span>
+      </div>
     </div>
     <div class="sel hide" id="sel"></div>
     <div id="plan"></div>
@@ -225,6 +251,19 @@ function clr(status){
   return {bg:"var(--"+k+"-bg)", bd:"var(--"+k+"-bd)", tx:"var(--"+(status||"none")+(status?"":"-tx")+")"};
 }
 
+/* צבע אחיד לפי גודל הדירה: כל גודל מקבל גוון קבוע, מסודר קטן→גדול (נמנע מאדום/כתום ששמורים לסטטוס) */
+var SIZES=[], STBAR={avail:"#1d9e75", hold:"#ef9f27", sold:"#e24b4a"};
+function sizeColor(sz){
+  var n=SIZES.length, idx=SIZES.indexOf(sz);
+  var h=90+(n>1?idx/(n-1):0)*230;
+  return {bg:"hsl("+h+",55%,90%)", bd:"hsl("+h+",45%,72%)", tx:"hsl("+h+",42%,30%)"};
+}
+function buildSizeScale(){
+  var el=document.getElementById("sizeScale"); if(!el) return;
+  var stops=SIZES.map(function(s){return sizeColor(s).bg;});
+  el.style.background = stops.length>1 ? "linear-gradient(90deg,"+stops.join(",")+")" : (stops[0]||"#eee");
+}
+
 /* ---------- תצוגת תרשים ---------- */
 function pickUnit(id){
   selId=id;
@@ -255,11 +294,13 @@ function renderPlan(){
     html+='<div class="floor'+(idx?'':' ftop')+'">';
     html+='<div class="flabel">'+f+'</div><div class="frow">';
     units.forEach(function(d){
-      var c=clr(d.status), on=(selId===d.bld+"-"+d.unit);
+      var sc=sizeColor(d.size), on=(selId===d.bld+"-"+d.unit), sold=(d.status==="sold");
+      var bar = d.status?STBAR[d.status]:"#d6d6d2";
       html+='<div class="ucell" onclick="pickUnit(\''+d.bld+'-'+d.unit+'\')" '
-        +'style="background:'+c.bg+';border:'+(on?'2px':'1px')+' solid '+(on?'var(--info)':c.bd)+';">'
-        +'<div class="sz" style="color:'+c.tx+'">'+d.size+'</div>'
-        +'<div class="un" style="color:'+c.tx+'">'+d.unit+(d.cap?'·ק':'')+'</div></div>';
+        +'style="background:'+sc.bg+';border:1px solid '+sc.bd+';border-bottom:4px solid '+bar+';'
+        +(on?'box-shadow:0 0 0 2px var(--info);':'')+(sold?'opacity:.6;':'')+'">'
+        +'<div class="sz" style="color:'+sc.tx+';'+(sold?'text-decoration:line-through;':'')+'">'+d.size+'</div>'
+        +'<div class="un" style="color:'+sc.tx+'">'+d.unit+(d.cap?'·ק':'')+'</div></div>';
     });
     html+='</div></div>';
   });
@@ -336,6 +377,8 @@ function load(){
     .then(function(t){
       DATA=parseSheet(t);
       if(!DATA.length) throw new Error("לא זוהו שורות דירה");
+      SIZES=DATA.map(function(d){return d.size;}).filter(function(v,i,a){return a.indexOf(v)===i;}).sort(function(a,b){return a-b;});
+      buildSizeScale();
       var now=new Date();
       document.getElementById("updated").textContent="עודכן "+now.toLocaleTimeString("he-IL",{hour:"2-digit",minute:"2-digit"})+" · "+DATA.length+" דירות";
       document.getElementById("banner").innerHTML = hasStatus ? "" :
