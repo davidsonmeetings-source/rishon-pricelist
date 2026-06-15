@@ -123,15 +123,14 @@
     </div>
     <div class="legend" style="flex-direction:column; gap:5px;">
       <div style="display:flex; gap:6px; align-items:center;">
-        <span>מילוי = גודל הדירה</span>
-        <span id="sizeScale" style="display:inline-flex; height:11px; width:140px; border-radius:4px; overflow:hidden; border:1px solid var(--line);"></span>
+        <span>פנוי — מילוי לפי גודל</span>
+        <span id="sizeScale" style="display:inline-flex; height:11px; width:120px; border-radius:4px; overflow:hidden; border:1px solid var(--line);"></span>
         <span style="font-size:11px;">קטן→גדול</span>
       </div>
-      <div style="display:flex; gap:14px;">
-        <span>פס תחתון:</span>
+      <div style="display:flex; gap:14px; align-items:center;">
         <span><i class="ti ti-minus" style="color:var(--avail-bd)"></i> פנוי</span>
-        <span><i class="ti ti-minus" style="color:var(--hold-bd)"></i> שמור</span>
-        <span><i class="ti ti-minus" style="color:var(--sold-bd)"></i> תפוס</span>
+        <span><span style="display:inline-block;width:15px;height:15px;border:1px solid var(--hold-bd);border-radius:3px;vertical-align:-3px;background:linear-gradient(to top right,transparent 44%,var(--hold-bd) 44%,var(--hold-bd) 56%,transparent 56%),linear-gradient(to bottom right,transparent 44%,var(--hold-bd) 44%,var(--hold-bd) 56%,transparent 56%),var(--hold-bg);"></span> שמור</span>
+        <span><span style="display:inline-block;width:15px;height:15px;border:1px solid var(--sold-bd);border-radius:3px;vertical-align:-3px;background:linear-gradient(to top right,transparent 44%,var(--sold-bd) 44%,var(--sold-bd) 56%,transparent 56%),linear-gradient(to bottom right,transparent 44%,var(--sold-bd) 44%,var(--sold-bd) 56%,transparent 56%),var(--sold-bg);"></span> תפוס</span>
       </div>
     </div>
     <div class="sel hide" id="sel"></div>
@@ -319,13 +318,24 @@ function renderPlan(){
     html+='<div class="floor'+(idx?'':' ftop')+'">';
     html+='<div class="flabel">'+f+'</div><div class="frow">';
     units.forEach(function(d){
-      var sc=sizeColor(d.size), on=(selId===d.bld+"-"+d.unit), sold=(d.status==="sold");
-      var bar = d.status?STBAR[d.status]:"#d6d6d2";
+      var on=(selId===d.bld+"-"+d.unit), st=d.status, bgStyle, bdColor, txColor;
+      if(st==="hold" || st==="sold"){
+        /* דירה שמורה/תפוסה: מילוי מלא בצבע הסטטוס + X אלכסוני בולט */
+        var fill=(st==="hold")?"var(--hold-bg)":"var(--sold-bg)";
+        var line=(st==="hold")?"var(--hold-bd)":"var(--sold-bd)";
+        txColor=(st==="hold")?"var(--hold)":"var(--sold)"; bdColor=line;
+        bgStyle="background:"
+          +"linear-gradient(to top right,transparent calc(50% - 1.5px),"+line+" calc(50% - 1.5px),"+line+" calc(50% + 1.5px),transparent calc(50% + 1.5px)),"
+          +"linear-gradient(to bottom right,transparent calc(50% - 1.5px),"+line+" calc(50% - 1.5px),"+line+" calc(50% + 1.5px),transparent calc(50% + 1.5px)),"
+          +fill+";";
+      } else {
+        var sc=sizeColor(d.size), bar=st?STBAR[st]:"#d6d6d2";
+        bgStyle="background:"+sc.bg+";border-bottom:4px solid "+bar+";"; bdColor=sc.bd; txColor=sc.tx;
+      }
       html+='<div class="ucell" onclick="pickUnit(\''+d.bld+'-'+d.unit+'\')" '
-        +'style="background:'+sc.bg+';border:1px solid '+sc.bd+';border-bottom:4px solid '+bar+';'
-        +(on?'box-shadow:0 0 0 2px var(--info);':'')+(sold?'opacity:.6;':'')+'">'
-        +'<div class="sz" style="color:'+sc.tx+';'+(sold?'text-decoration:line-through;':'')+'">'+d.size+'</div>'
-        +'<div class="un" style="color:'+sc.tx+'">'+d.unit+(d.cap?'·ק':'')+'</div></div>';
+        +'style="'+bgStyle+'border:1px solid '+bdColor+';'+(on?'box-shadow:0 0 0 2px var(--info);':'')+'">'
+        +'<div class="sz" style="color:'+txColor+';">'+d.size+'</div>'
+        +'<div class="un" style="color:'+txColor+'">'+d.unit+(d.cap?'·ק':'')+'</div></div>';
     });
     html+='</div></div>';
   });
