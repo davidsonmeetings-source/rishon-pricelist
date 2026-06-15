@@ -9,18 +9,20 @@
   :root{
     --bg:#f4f5f3; --card:#ffffff; --line:rgba(0,0,0,.10); --line2:rgba(0,0,0,.18);
     --tx:#1b1b19; --tx2:#6a6a64; --tx3:#9a9a93;
-    --avail:#0f6e56; --avail-bg:#e1f5ee; --hold:#854f0b; --hold-bg:#faeeda;
-    --sold:#a32d2d; --sold-bg:#fceaea; --info:#185fa5; --info-bg:#e6f1fb;
+    --avail:#0f6e56; --avail-bg:#e1f5ee; --avail-bd:#1d9e75;
+    --hold:#854f0b; --hold-bg:#faeeda; --hold-bd:#ef9f27;
+    --sold:#a32d2d; --sold-bg:#fceaea; --sold-bd:#e24b4a;
+    --none-tx:#777; --none-bg:#eeeeec; --none-bd:#cfcfca;
+    --info:#185fa5; --info-bg:#e6f1fb;
   }
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
   body{margin:0; background:var(--bg); color:var(--tx);
     font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Noto Sans Hebrew",sans-serif;
     font-size:15px; line-height:1.5;}
   .wrap{max-width:560px; margin:0 auto; padding:12px 12px 40px;}
-  header{text-align:center; padding:6px 0 12px;}
+  header{text-align:center; padding:6px 0 10px;}
   header h1{font-size:18px; font-weight:600; margin:0;}
   header .sub{font-size:12px; color:var(--tx2); margin-top:2px;}
-  .panel{background:#ececea; border-radius:14px; padding:10px; margin-bottom:10px;}
   .seg{display:flex; gap:6px; margin-bottom:8px;}
   .seg:last-child{margin-bottom:0;}
   .seg button{flex:1; padding:8px 0; font-size:13px; font-family:inherit; color:var(--tx);
@@ -28,17 +30,22 @@
   .seg button.on{background:var(--info-bg); color:var(--info); border-color:#a9cdf0; font-weight:600;}
   .seg select,.seg input{flex:1; padding:8px 10px; font-size:13px; font-family:inherit; color:var(--tx);
     background:#fff; border:1px solid var(--line); border-radius:9px; min-width:0;}
+  .vtoggle button{font-size:14px; padding:9px 0;}
+  .panel{background:#ececea; border-radius:14px; padding:10px; margin-bottom:10px;}
   .stats{display:flex; gap:6px; margin-bottom:10px;}
   .stat{flex:1; background:#ececea; border-radius:10px; padding:7px; text-align:center;}
   .stat .lbl{font-size:12px; color:var(--tx2);}
   .stat .num{font-size:19px; font-weight:600;}
+  .legend{display:flex; gap:14px; justify-content:center; margin:6px 0 10px; font-size:12px; color:var(--tx2);}
+  .legend i{font-size:13px; vertical-align:-1px;}
+  /* list */
   .list{display:flex; flex-direction:column; gap:5px;}
   .row{background:var(--card); border:1px solid var(--line); border-radius:10px; overflow:hidden;}
   .row .head{padding:9px 11px; display:flex; align-items:center; justify-content:space-between;
     cursor:pointer; border-right:3px solid var(--line2);}
-  .row.avail .head{border-right-color:var(--avail);}
-  .row.hold .head{border-right-color:var(--hold);}
-  .row.sold .head{border-right-color:var(--sold);}
+  .row.avail .head{border-right-color:var(--avail-bd);}
+  .row.hold .head{border-right-color:var(--hold-bd);}
+  .row.sold .head{border-right-color:var(--sold-bd);}
   .ttl{font-size:15px; font-weight:600; line-height:1.3;}
   .meta{font-size:12px; color:var(--tx2);}
   .price{font-size:15px; font-weight:600; text-align:left; white-space:nowrap;}
@@ -46,19 +53,32 @@
   .pill.avail{background:var(--avail-bg); color:var(--avail);}
   .pill.hold{background:var(--hold-bg); color:var(--hold);}
   .pill.sold{background:var(--sold-bg); color:var(--sold);}
-  .pill.none{background:#eee; color:#777;}
+  .pill.none{background:var(--none-bg); color:var(--none-tx);}
   .cap{display:inline-block; font-size:10px; padding:0 6px; border-radius:6px;
     background:var(--info-bg); color:var(--info); margin-right:5px; vertical-align:1px;}
   .det{background:#f6f6f4; border-top:1px solid var(--line); padding:9px 12px; font-size:13px;}
   .det .dr{display:flex; justify-content:space-between; padding:3px 0;}
   .det .dr span:first-child{color:var(--tx2);}
   .det .dr span:last-child{font-weight:600;}
+  /* plan */
+  .sel{background:var(--card); border:1px solid var(--line); border-radius:12px; padding:10px 12px; margin-bottom:8px;}
+  .plan{border:1px solid var(--line2); border-radius:8px 8px 0 0; overflow:hidden;}
+  .floor{display:flex; align-items:stretch;}
+  .floor+.floor, .ftop{border-top:1px solid var(--line);}
+  .flabel{flex:0 0 26px; display:flex; align-items:center; justify-content:center;
+    font-size:11px; color:var(--tx2); background:#ececea;}
+  .frow{flex:1; display:flex; gap:2px; padding:2px; min-width:0;}
+  .ucell{flex:1; min-width:0; cursor:pointer; border-radius:4px; padding:4px 1px; text-align:center; line-height:1.15;}
+  .ucell .sz{font-size:13px; font-weight:600;}
+  .ucell .un{font-size:9px; opacity:.85;}
+  .roof{height:9px; background:#e3e3df; border:1px solid var(--line2); border-top:none; border-radius:0 0 4px 4px;}
   .msg{text-align:center; color:var(--tx2); padding:24px 10px; font-size:14px; line-height:1.7;}
   .foot{text-align:center; color:var(--tx3); font-size:11px; margin-top:16px; line-height:1.6;}
   .banner{background:var(--hold-bg); color:var(--hold); border-radius:10px; padding:8px 11px;
     font-size:12px; margin-bottom:10px; text-align:center;}
   .refresh{display:block; margin:14px auto 0; padding:7px 16px; font-size:13px; font-family:inherit;
     background:#fff; border:1px solid var(--line); border-radius:9px; color:var(--tx); cursor:pointer;}
+  .hide{display:none;}
 </style>
 </head>
 <body>
@@ -70,37 +90,60 @@
 
   <div id="banner"></div>
 
-  <div class="panel">
-    <div class="seg" id="bldSeg">
-      <button data-bld="all" class="on">שני הבניינים</button>
-      <button data-bld="1">בניין 1</button>
-      <button data-bld="2">מגדל 20 ק'</button>
-    </div>
-    <div class="seg" id="statSeg">
-      <button data-st="all" class="on">הכל</button>
-      <button data-st="avail">פנוי</button>
-      <button data-st="hold">שמור</button>
-      <button data-st="sold">נמכר</button>
-    </div>
-    <div class="seg">
-      <select id="rooms">
-        <option value="all">כל החדרים</option>
-        <option value="2">2 חדרים</option>
-        <option value="3">3 חדרים</option>
-        <option value="4">4 חדרים</option>
-        <option value="5">5 חדרים</option>
-      </select>
-      <input id="q" placeholder="חיפוש מס' / טיפוס">
-    </div>
+  <div class="seg vtoggle" id="viewSeg">
+    <button data-v="plan" class="on">תרשים בניין</button>
+    <button data-v="list">רשימה</button>
   </div>
 
-  <div class="stats">
-    <div class="stat"><div class="lbl">פנוי</div><div class="num" id="cAvail" style="color:var(--avail)">0</div></div>
-    <div class="stat"><div class="lbl">שמור</div><div class="num" id="cHold" style="color:var(--hold)">0</div></div>
-    <div class="stat"><div class="lbl">נמכר</div><div class="num" id="cSold" style="color:var(--sold)">0</div></div>
+  <!-- ============ תצוגת תרשים ============ -->
+  <div id="planView">
+    <div class="seg" id="planBldSeg">
+      <button data-b="1" class="on">בניין 1</button>
+      <button data-b="2">מגדל 20 ק'</button>
+    </div>
+    <div class="legend">
+      <span><i class="ti ti-square-rounded-filled" style="color:var(--avail-bd)"></i> פנוי</span>
+      <span><i class="ti ti-square-rounded-filled" style="color:var(--hold-bd)"></i> שמור</span>
+      <span><i class="ti ti-square-rounded-filled" style="color:var(--sold-bd)"></i> נמכר</span>
+    </div>
+    <div class="sel hide" id="sel"></div>
+    <div id="plan"></div>
+    <p class="foot">המספר בתא = שטח במ"ר · לחיצה על דירה לפרטים מלאים</p>
   </div>
 
-  <div class="list" id="list"><div class="msg">טוען…</div></div>
+  <!-- ============ תצוגת רשימה ============ -->
+  <div id="listView" class="hide">
+    <div class="panel">
+      <div class="seg" id="listBldSeg">
+        <button data-b="all" class="on">שני הבניינים</button>
+        <button data-b="1">בניין 1</button>
+        <button data-b="2">מגדל 20 ק'</button>
+      </div>
+      <div class="seg" id="statSeg">
+        <button data-st="all" class="on">הכל</button>
+        <button data-st="avail">פנוי</button>
+        <button data-st="hold">שמור</button>
+        <button data-st="sold">נמכר</button>
+      </div>
+      <div class="seg">
+        <select id="rooms">
+          <option value="all">כל החדרים</option>
+          <option value="2">2 חדרים</option>
+          <option value="3">3 חדרים</option>
+          <option value="4">4 חדרים</option>
+          <option value="5">5 חדרים</option>
+        </select>
+        <input id="q" placeholder="חיפוש מס' / טיפוס">
+      </div>
+    </div>
+    <div class="stats">
+      <div class="stat"><div class="lbl">פנוי</div><div class="num" id="cAvail" style="color:var(--avail)">0</div></div>
+      <div class="stat"><div class="lbl">שמור</div><div class="num" id="cHold" style="color:var(--hold)">0</div></div>
+      <div class="stat"><div class="lbl">נמכר</div><div class="num" id="cSold" style="color:var(--sold)">0</div></div>
+    </div>
+    <div class="list" id="list"></div>
+  </div>
+
   <button class="refresh" id="refreshBtn">רענון נתונים</button>
   <div class="foot" id="foot"></div>
 </div>
@@ -118,27 +161,23 @@ var B1 = {floor:1, unit:2, type:3, dir:4, rooms:5, size:6, bal:7, pk:8,
           price:9, equity:10, law1:11, law2:12, taxS:13, taxI:14, status:15};
 var B2 = {floor:16, ftype:17, unit:18, type:19, dir:20, rooms:21, size:22, bal:23, pk:24,
           price:25, equity:26, law1:27, law2:28, taxS:29, taxI:30, status:31};
-/* עמודת הסטטוס: B1 בעמודה 15 (אחרי "מס רכישה להשקעה" של בניין 1),
-   B2 בעמודה 31 (אחרי "מס רכישה להשקעה" של המגדל). ערכים: פנוי / שמור / נמכר. */
+/* עמודת הסטטוס: B1 בעמודה 15 (P), B2 בעמודה 31 (AF). ערכים: פנוי / שמור / נמכר. */
 /* ================================================ */
 
 var GVIZ = "https://docs.google.com/spreadsheets/d/"+SHEET_ID+"/gviz/tq?tqx=out:csv&gid="+GID;
-var DATA = [], bld="all", filter="all", open={}, hasStatus=false;
+var DATA = [], hasStatus=false;
+var view="plan", planB=1, selId=null;
+var listB="all", filter="all", open={};
 
+/* ---------- פירוק הגיליון ---------- */
 function parseCSV(text){
   var rows=[], row=[], cur="", q=false;
   for(var i=0;i<text.length;i++){
     var ch=text[i];
-    if(q){
-      if(ch=='"'){ if(text[i+1]=='"'){cur+='"';i++;} else q=false; }
-      else cur+=ch;
-    }else{
-      if(ch=='"') q=true;
-      else if(ch==','){ row.push(cur); cur=""; }
+    if(q){ if(ch=='"'){ if(text[i+1]=='"'){cur+='"';i++;} else q=false; } else cur+=ch; }
+    else{ if(ch=='"') q=true; else if(ch==','){ row.push(cur); cur=""; }
       else if(ch=='\n'){ row.push(cur); rows.push(row); row=[]; cur=""; }
-      else if(ch=='\r'){}
-      else cur+=ch;
-    }
+      else if(ch=='\r'){} else cur+=ch; }
   }
   if(cur.length||row.length){ row.push(cur); rows.push(row); }
   return rows;
@@ -152,10 +191,9 @@ function statusKey(s){
   if(s.indexOf("פנוי")>=0) return "avail";
   return null;
 }
-
 function extract(r, M, bldNum){
   var unit=cell(r,M.unit), price=toNum(cell(r,M.price));
-  if(!/^\d+$/.test(unit) || price<100000) return null;   /* שורת דירה אמיתית בלבד */
+  if(!/^\d+$/.test(unit) || price<100000) return null;
   var ft = M.ftype!=null ? cell(r,M.ftype) : "";
   return {
     bld:bldNum, floor:toNum(cell(r,M.floor)), unit:parseInt(unit,10),
@@ -174,7 +212,6 @@ function parseSheet(text){
     var a=extract(rows[i],B1,1); if(a){ out.push(a); if(a.status) hasStatus=true; }
     var b=extract(rows[i],B2,2); if(b){ out.push(b); if(b.status) hasStatus=true; }
   }
-  /* תווית "קפסולה" היא תא ממוזג — מסומנת רק בדירה הראשונה בקומה. נחיל על כל הקומה. */
   var capFloors={};
   out.forEach(function(d){ if(d.cap) capFloors[d.bld+"-"+d.floor]=true; });
   out.forEach(function(d){ if(capFloors[d.bld+"-"+d.floor]) d.cap=true; });
@@ -183,15 +220,61 @@ function parseSheet(text){
 
 function nis(n){ return "₪"+Math.round(n).toLocaleString("he-IL"); }
 var ST={avail:{lb:"פנוי"},hold:{lb:"שמור"},sold:{lb:"נמכר"}};
+function clr(status){
+  var k=status||"none";
+  return {bg:"var(--"+k+"-bg)", bd:"var(--"+k+"-bd)", tx:"var(--"+(status||"none")+(status?"":"-tx")+")"};
+}
 
-function render(){
+/* ---------- תצוגת תרשים ---------- */
+function pickUnit(id){
+  selId=id;
+  var d=DATA.filter(function(x){return x.bld+"-"+x.unit===id;})[0];
+  if(!d){ return; }
+  var c=clr(d.status), lb=d.status?ST[d.status].lb:"לא צוין";
+  document.getElementById("sel").className="sel";
+  document.getElementById("sel").innerHTML=
+    '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">'
+    +'<div style="min-width:0"><div style="font-size:16px;font-weight:600;">דירה '+d.unit+' · טיפוס '+d.type+(d.cap?' · קפסולה':'')+'</div>'
+    +'<div class="meta" style="margin-top:2px;">קומה '+d.floor+' · '+d.rooms+' חד\' · '+d.size+' מ"ר · '+d.dir+'</div></div>'
+    +'<div style="text-align:left;white-space:nowrap;"><div style="font-size:16px;font-weight:600;">'+nis(d.price)+'</div>'
+    +'<span class="pill '+(d.status||"none")+'" style="margin-top:3px;">'+lb+'</span></div></div>'
+    +'<div class="det" style="margin-top:8px;border-radius:8px;border-top:none;background:#f3f3f1;">'
+    +dr("הון עצמי 20%",nis(d.equity))+dr('שכ"ט עו"ד 1.1%',nis(d.law1))
+    +dr("מס רכישה — דירה יחידה", d.taxS?nis(d.taxS):"פטור")
+    +dr("מס רכישה — להשקעה",nis(d.taxI))+'</div>';
+  renderPlan();
+  document.getElementById("sel").scrollIntoView({behavior:"smooth",block:"nearest"});
+}
+function renderPlan(){
+  var rows=DATA.filter(function(d){return d.bld===planB;});
+  if(!rows.length){ document.getElementById("plan").innerHTML='<div class="msg">אין נתונים לבניין זה</div>'; return; }
+  var floors=rows.map(function(d){return d.floor;}).filter(function(v,i,a){return a.indexOf(v)===i;}).sort(function(a,b){return b-a;});
+  var html='<div class="plan">';
+  floors.forEach(function(f,idx){
+    var units=rows.filter(function(d){return d.floor===f;}).sort(function(a,b){return a.unit-b.unit;});
+    html+='<div class="floor'+(idx?'':' ftop')+'">';
+    html+='<div class="flabel">'+f+'</div><div class="frow">';
+    units.forEach(function(d){
+      var c=clr(d.status), on=(selId===d.bld+"-"+d.unit);
+      html+='<div class="ucell" onclick="pickUnit(\''+d.bld+'-'+d.unit+'\')" '
+        +'style="background:'+c.bg+';border:'+(on?'2px':'1px')+' solid '+(on?'var(--info)':c.bd)+';">'
+        +'<div class="sz" style="color:'+c.tx+'">'+d.size+'</div>'
+        +'<div class="un" style="color:'+c.tx+'">'+d.unit+(d.cap?'·ק':'')+'</div></div>';
+    });
+    html+='</div></div>';
+  });
+  html+='</div><div class="roof"></div>';
+  document.getElementById("plan").innerHTML=html;
+}
+
+/* ---------- תצוגת רשימה ---------- */
+function renderList(){
   var rooms=document.getElementById("rooms").value;
   var query=document.getElementById("q").value.trim().toLowerCase();
-  var scope=DATA.filter(function(d){return bld=="all"||String(d.bld)==bld;});
+  var scope=DATA.filter(function(d){return listB=="all"||String(d.bld)==listB;});
   document.getElementById("cAvail").textContent=scope.filter(function(d){return d.status=="avail";}).length;
   document.getElementById("cHold").textContent =scope.filter(function(d){return d.status=="hold";}).length;
   document.getElementById("cSold").textContent =scope.filter(function(d){return d.status=="sold";}).length;
-
   var rows=scope.filter(function(d){
     if(filter!="all" && d.status!=filter) return false;
     if(rooms!="all" && String(d.rooms)!=rooms) return false;
@@ -203,42 +286,49 @@ function render(){
   list.innerHTML=rows.map(function(d){
     var id=d.bld+"-"+d.unit, stk=d.status||"none";
     var pill=d.status?('<span class="pill '+stk+'">'+ST[d.status].lb+'</span>'):'<span class="pill none">—</span>';
-    var bn=d.bld==1?BUILDING1_NAME:BUILDING2_NAME;
-    var cap=d.cap?'<span class="cap">קפסולה</span>':'';
-    var head='<div class="head" onclick="tog(\''+id+'\')">'
+    var bn=d.bld==1?BUILDING1_NAME:BUILDING2_NAME, cap=d.cap?'<span class="cap">קפסולה</span>':'';
+    var head='<div class="head" onclick="togRow(\''+id+'\')">'
       +'<div style="min-width:0"><div class="ttl">דירה '+d.unit+' · '+d.type+cap+'</div>'
       +'<div class="meta">'+bn+' · ק.'+d.floor+' · '+d.rooms+' חד\' · '+d.size+' מ"ר · '+d.dir+'</div></div>'
       +'<div><div class="price">'+nis(d.price)+'</div>'+pill+'</div></div>';
     var det='';
     if(open[id]){
-      det='<div class="det">'
-        +dr("מרפסת",d.bal+' מ"ר')+dr("חניות",d.pk)
-        +dr("הון עצמי 20%",nis(d.equity))
-        +dr('שכ"ט עו"ד 1.1%',nis(d.law1))
+      det='<div class="det">'+dr("מרפסת",d.bal+' מ"ר')+dr("חניות",d.pk)
+        +dr("הון עצמי 20%",nis(d.equity))+dr('שכ"ט עו"ד 1.1%',nis(d.law1))
         +dr('שכ"ט עו"ד תשלום ראשון 0.35%',nis(d.law2))
         +dr("מס רכישה — דירה יחידה", d.taxS?nis(d.taxS):"פטור")
-        +dr("מס רכישה — דירה להשקעה",nis(d.taxI))
-        +'</div>';
+        +dr("מס רכישה — להשקעה",nis(d.taxI))+'</div>';
     }
     return '<div class="row '+stk+'">'+head+det+'</div>';
   }).join("");
 }
 function dr(k,v){ return '<div class="dr"><span>'+k+'</span><span>'+v+'</span></div>'; }
-function tog(id){ open[id]=!open[id]; render(); }
+function togRow(id){ open[id]=!open[id]; renderList(); }
 
+function renderActive(){ if(view=="plan") renderPlan(); else renderList(); }
+
+/* ---------- מתגים ---------- */
 function bindSeg(segId,setter){
   document.getElementById(segId).addEventListener("click",function(e){
     var b=e.target.closest("button"); if(!b) return;
     [].forEach.call(this.querySelectorAll("button"),function(x){x.classList.remove("on");});
-    b.classList.add("on"); setter(b); render();
+    b.classList.add("on"); setter(b);
   });
 }
-bindSeg("bldSeg",function(b){ bld=b.getAttribute("data-bld"); });
-bindSeg("statSeg",function(b){ filter=b.getAttribute("data-st"); });
-document.getElementById("rooms").addEventListener("change",render);
-document.getElementById("q").addEventListener("input",render);
+bindSeg("viewSeg",function(b){
+  view=b.getAttribute("data-v");
+  document.getElementById("planView").className = view=="plan"?"":"hide";
+  document.getElementById("listView").className = view=="list"?"":"hide";
+  renderActive();
+});
+bindSeg("planBldSeg",function(b){ planB=+b.getAttribute("data-b"); selId=null; document.getElementById("sel").className="sel hide"; renderPlan(); });
+bindSeg("listBldSeg",function(b){ listB=b.getAttribute("data-b"); renderList(); });
+bindSeg("statSeg",function(b){ filter=b.getAttribute("data-st"); renderList(); });
+document.getElementById("rooms").addEventListener("change",renderList);
+document.getElementById("q").addEventListener("input",renderList);
 document.getElementById("refreshBtn").addEventListener("click",load);
 
+/* ---------- טעינה ---------- */
 function load(){
   document.getElementById("updated").textContent="טוען נתונים…";
   fetch(GVIZ+"&_="+(new Date().getTime()))
@@ -251,11 +341,12 @@ function load(){
       document.getElementById("banner").innerHTML = hasStatus ? "" :
         '<div class="banner">להצגת פנוי/שמור/נמכר — מלאו את עמודת הסטטוס בגיליון (בניין 1: עמודה P · מגדל: עמודה AF).</div>';
       document.getElementById("foot").innerHTML='נתונים חיים מתוך הגיליון של דנה וחופית · צפייה בלבד';
-      render();
+      renderActive();
     })
     .catch(function(e){
       document.getElementById("updated").textContent="שגיאה בטעינה";
-      document.getElementById("list").innerHTML='<div class="msg">לא הצלחנו לטעון את הנתונים.<br>ודאו שהגיליון משותף כ"כל מי שיש לו הקישור — צופה".<br><small>'+e.message+'</small></div>';
+      var m='<div class="msg">לא הצלחנו לטעון את הנתונים.<br>ודאו שהגיליון משותף כ"כל מי שיש לו הקישור — צופה".<br><small>'+e.message+'</small></div>';
+      document.getElementById("plan").innerHTML=m; document.getElementById("list").innerHTML=m;
     });
 }
 load();
