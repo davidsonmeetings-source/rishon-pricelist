@@ -183,13 +183,13 @@ var GID      = "815985993";
 var BUILDING1_NAME = "בניין 1";
 var BUILDING2_NAME = "מגדל 20 ק'";
 
-/* מיקום העמודות בגיליון (0 = העמודה הראשונה).
-   אם דנה תוסיף/תמחק עמודה — זה המקום היחיד לעדכן. */
-var B1 = {floor:1, unit:2, type:3, dir:4, rooms:5, size:6, bal:7, pk:8,
+/* העמודות מזוהות אוטומטית לפי הכותרת "טיפוס דירה" (מופע אחד לכל בניין),
+   כך שהוספה/הזזה של עמודות לא שוברת את הדף. אלו מיקומי גיבוי בלבד אם הזיהוי נכשל. */
+var B1_FALLBACK = {floor:1, unit:2, type:3, dir:4, rooms:5, size:6, bal:7, pk:8,
           price:9, equity:10, law1:11, law2:12, taxS:13, taxI:14, status:15};
-var B2 = {floor:16, ftype:17, unit:18, type:19, dir:20, rooms:21, size:22, bal:23, pk:24,
-          price:25, equity:26, law1:27, law2:28, taxS:29, taxI:30, status:31};
-/* עמודת הסטטוס: B1 בעמודה 15 (P), B2 בעמודה 31 (AF). ערכים: פנוי / שמור / נמכר. */
+var B2_FALLBACK = {floor:17, ftype:18, unit:19, type:20, dir:21, rooms:22, size:23, bal:24, pk:25,
+          price:26, equity:27, law1:28, law2:29, taxS:30, taxI:31, status:32};
+/* ערכי הסטטוס בגיליון: פנוי / שמור / נמכר */
 /* ================================================ */
 
 var GVIZ = "https://docs.google.com/spreadsheets/d/"+SHEET_ID+"/gviz/tq?tqx=out:csv&gid="+GID;
@@ -233,12 +233,30 @@ function extract(r, M, bldNum){
     status: M.status!=null ? statusKey(cell(r,M.status)) : null
   };
 }
+/* מאתר את שורת הכותרת ובונה מיפוי עמודות לכל בניין לפי המופעים של "טיפוס דירה" */
+function buildMaps(rows){
+  for(var i=0;i<rows.length;i++){
+    var types=[];
+    for(var j=0;j<rows[i].length;j++){ if(cell(rows[i],j).indexOf("טיפוס")>=0) types.push(j); }
+    if(types.length>=2){
+      return types.map(function(ti){
+        var hasFtype = cell(rows[i],ti-2).indexOf("סוג")>=0;   /* "סוג קומה" משמאל ליחידה => מגדל */
+        return { floor: hasFtype?ti-3:ti-2, ftype: hasFtype?ti-2:null, unit:ti-1, type:ti,
+          dir:ti+1, rooms:ti+2, size:ti+3, bal:ti+4, pk:ti+5, price:ti+6,
+          equity:ti+7, law1:ti+8, law2:ti+9, taxS:ti+10, taxI:ti+11, status:ti+12 };
+      });
+    }
+  }
+  return [B1_FALLBACK, B2_FALLBACK];   /* גיבוי */
+}
 function parseSheet(text){
   var rows=parseCSV(text), out=[];
   hasStatus=false;
+  var maps=buildMaps(rows);
   for(var i=0;i<rows.length;i++){
-    var a=extract(rows[i],B1,1); if(a){ out.push(a); if(a.status) hasStatus=true; }
-    var b=extract(rows[i],B2,2); if(b){ out.push(b); if(b.status) hasStatus=true; }
+    for(var b=0;b<maps.length;b++){
+      var a=extract(rows[i],maps[b],b+1); if(a){ out.push(a); if(a.status) hasStatus=true; }
+    }
   }
   var capFloors={};
   out.forEach(function(d){ if(d.cap) capFloors[d.bld+"-"+d.floor]=true; });
