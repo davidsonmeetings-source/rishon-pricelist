@@ -302,6 +302,7 @@ function pickUnit(id){
     +'<span class="pill '+(d.status||"none")+'" style="margin-top:3px;">'+lb+'</span></div></div>'
     +'<div class="det" style="margin-top:8px;border-radius:8px;border-top:none;background:#f3f3f1;">'
     +dr("הון עצמי 20%",nis(d.equity))+dr('שכ"ט עו"ד 1.1%',nis(d.law1))
+    +dr('שכ"ט עו"ד תשלום ראשון 0.35%',nis(d.law2))
     +dr("מס רכישה — דירה יחידה", d.taxS?nis(d.taxS):"פטור")
     +dr("מס רכישה — להשקעה",nis(d.taxI))+'</div>';
   renderPlan();
