@@ -297,7 +297,7 @@ function pickUnit(id){
   document.getElementById("sel").innerHTML=
     '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">'
     +'<div style="min-width:0"><div style="font-size:16px;font-weight:600;">דירה '+d.unit+' · טיפוס '+d.type+(d.cap?' · קפסולה':'')+'</div>'
-    +'<div class="meta" style="margin-top:2px;">קומה '+d.floor+' · '+d.rooms+' חד\' · '+d.size+' מ"ר · '+d.dir+'</div></div>'
+    +'<div class="meta" style="margin-top:2px;">קומה '+d.floor+' · '+d.rooms+' חד\' · '+d.size+' מ"ר'+(d.bal?' · מרפסת '+d.bal+' מ"ר':'')+' · '+d.dir+'</div></div>'
     +'<div style="text-align:left;white-space:nowrap;"><div style="font-size:16px;font-weight:600;">'+nis(d.price)+'</div>'
     +'<span class="pill '+(d.status||"none")+'" style="margin-top:3px;">'+lb+'</span></div></div>'
     +'<div class="det" style="margin-top:8px;border-radius:8px;border-top:none;background:#f3f3f1;">'
@@ -365,7 +365,7 @@ function renderList(){
     var bn=d.bld==1?BUILDING1_NAME:BUILDING2_NAME, cap=d.cap?'<span class="cap">קפסולה</span>':'';
     var head='<div class="head" onclick="togRow(\''+id+'\')">'
       +'<div style="min-width:0"><div class="ttl">דירה '+d.unit+' · '+d.type+cap+'</div>'
-      +'<div class="meta">'+bn+' · ק.'+d.floor+' · '+d.rooms+' חד\' · '+d.size+' מ"ר · '+d.dir+'</div></div>'
+      +'<div class="meta">'+bn+' · ק.'+d.floor+' · '+d.rooms+' חד\' · '+d.size+' מ"ר'+(d.bal?' · מרפסת '+d.bal+' מ"ר':'')+' · '+d.dir+'</div></div>'
       +'<div><div class="price">'+nis(d.price)+'</div>'+pill+'</div></div>';
     var det='';
     if(open[id]){
