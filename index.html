@@ -185,12 +185,14 @@ var BUILDING2_NAME = "מגדל 20 ק'";
    בניין 1: IDs 1..15  |  מגדל: IDs 101..116.  ערכי סטטוס: פנוי / שמור / תפוס */
 var ID_ROW_LABEL = "מזהה";
 var IDB1 = {floor:1, unit:2, type:3, dir:4, rooms:5, size:6, bal:7, pk:8,
-            price:9, equity:10, law1:11, law2:12, taxS:13, taxI:14, status:15};
+            price:9, equity:10, law1:11, law2:12, taxS:13, taxI:14,
+            landPrice:"14.1", landPct:"14.2", landBal:"14.3", status:15};
 var IDB2 = {floor:101, ftype:102, unit:103, type:104, dir:105, rooms:106, size:107, bal:108, pk:109,
-            price:110, equity:111, law1:112, law2:113, taxS:114, taxI:115, status:116};
+            price:110, equity:111, law1:112, law2:113, taxS:114, taxI:115,
+            landPrice:"115.1", landPct:"115.2", landBal:"115.3", status:116};
 /* גיבוי לפי מיקום קבוע, אם שורת המזהה חסרה */
-var B1_FB = {floor:1, unit:2, type:3, dir:4, rooms:5, size:6, bal:7, pk:8, price:9, equity:10, law1:11, law2:12, taxS:13, taxI:14, status:15};
-var B2_FB = {floor:21, ftype:22, unit:23, type:24, dir:25, rooms:26, size:27, bal:28, pk:29, price:30, equity:31, law1:32, law2:33, taxS:34, taxI:35, status:36};
+var B1_FB = {floor:1, unit:2, type:3, dir:4, rooms:5, size:6, bal:7, pk:8, price:9, equity:10, law1:11, law2:12, taxS:13, taxI:14, landPrice:15, landPct:16, landBal:17, status:18};
+var B2_FB = {floor:24, ftype:25, unit:26, type:27, dir:28, rooms:29, size:30, bal:31, pk:32, price:33, equity:34, law1:35, law2:36, taxS:37, taxI:38, landPrice:39, landPct:40, landBal:41, status:42};
 /* ================================================ */
 
 var GVIZ = "https://docs.google.com/spreadsheets/d/"+SHEET_ID+"/gviz/tq?tqx=out:csv&gid="+GID;
@@ -213,6 +215,7 @@ function parseCSV(text){
 }
 function cell(r,i){ return (i!=null && r[i]!=null) ? String(r[i]).trim() : ""; }
 function toNum(s){ var d=(s||"").replace(/[^\d]/g,""); return d?parseInt(d,10):0; }
+function toPct(s){ var f=parseFloat((s||"").replace(/[^\d.]/g,"")); return isNaN(f)?0:f; }
 function statusKey(s){
   s=(s||"").replace(/"/g,"").trim();
   if(s.indexOf("תפוס")>=0 || s.indexOf("נמכר")>=0) return "sold";
@@ -230,6 +233,7 @@ function extract(r, M, bldNum){
     size:toNum(cell(r,M.size)), bal:toNum(cell(r,M.bal)), pk:toNum(cell(r,M.pk)),
     price:price, equity:toNum(cell(r,M.equity)), law1:toNum(cell(r,M.law1)),
     law2:toNum(cell(r,M.law2)), taxS:toNum(cell(r,M.taxS)), taxI:toNum(cell(r,M.taxI)),
+    landPrice:toNum(cell(r,M.landPrice)), landPct:toPct(cell(r,M.landPct)), landBal:toNum(cell(r,M.landBal)),
     cap: ft.indexOf("קפסולה")>=0,
     status: M.status!=null ? statusKey(cell(r,M.status)) : null
   };
@@ -239,7 +243,7 @@ function buildIdCol(rows){
   for(var i=0;i<rows.length;i++){
     if(cell(rows[i],0).indexOf(ID_ROW_LABEL)>=0){
       var map={};
-      for(var j=0;j<rows[i].length;j++){ var v=cell(rows[i],j); if(/^\d+$/.test(v)) map[+v]=j; }
+      for(var j=0;j<rows[i].length;j++){ var v=cell(rows[i],j); if(/^\d+(\.\d+)?$/.test(v)) map[v.replace(/\.0+$/,"")]=j; }
       return map;
     }
   }
@@ -304,7 +308,7 @@ function pickUnit(id){
     +dr("הון עצמי 20%",nis(d.equity))+dr('שכ"ט עו"ד 1.1%',nis(d.law1))
     +dr('שכ"ט עו"ד תשלום ראשון 0.35%',nis(d.law2))
     +dr("מס רכישה — דירה יחידה", d.taxS?nis(d.taxS):"פטור")
-    +dr("מס רכישה — להשקעה",nis(d.taxI))+'</div>';
+    +dr("מס רכישה — להשקעה",nis(d.taxI))+landRows(d)+'</div>';
   renderPlan();
   document.getElementById("sel").scrollIntoView({behavior:"smooth",block:"nearest"});
 }
@@ -373,12 +377,19 @@ function renderList(){
         +dr("הון עצמי 20%",nis(d.equity))+dr('שכ"ט עו"ד 1.1%',nis(d.law1))
         +dr('שכ"ט עו"ד תשלום ראשון 0.35%',nis(d.law2))
         +dr("מס רכישה — דירה יחידה", d.taxS?nis(d.taxS):"פטור")
-        +dr("מס רכישה — להשקעה",nis(d.taxI))+'</div>';
+        +dr("מס רכישה — להשקעה",nis(d.taxI))+landRows(d)+'</div>';
     }
     return '<div class="row '+stk+'">'+head+det+'</div>';
   }).join("");
 }
 function dr(k,v){ return '<div class="dr"><span>'+k+'</span><span>'+v+'</span></div>'; }
+function landRows(d){
+  if(!d.landPrice) return '';
+  return '<div style="border-top:1px dashed var(--line2);margin-top:5px;padding-top:5px;">'
+    +dr("מחיר קרקע",nis(d.landPrice))
+    +dr("אחוז קרקע מהאמדן",(d.landPct?d.landPct+"%":"—"))
+    +dr("יתרת השלמה לקרקע",nis(d.landBal))+'</div>';
+}
 function togRow(id){ open[id]=!open[id]; renderList(); }
 
 function renderActive(){ if(view=="plan") renderPlan(); else renderList(); }
