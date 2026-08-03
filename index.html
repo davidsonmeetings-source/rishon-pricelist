@@ -186,13 +186,13 @@ var BUILDING2_NAME = "מגדל 20 ק'";
 var ID_ROW_LABEL = "מזהה";
 var IDB1 = {floor:1, unit:2, type:3, dir:4, rooms:5, size:6, bal:7, pk:8,
             price:9, equity:10, law1:11, law2:12, taxS:13, taxI:14,
-            landPrice:"14.1", landPct:"14.2", landBal:"14.3", status:15};
+            buildCost:"14.01", landPrice:"14.1", landPct:"14.2", landBal:"14.3", status:15};
 var IDB2 = {floor:101, ftype:102, unit:103, type:104, dir:105, rooms:106, size:107, bal:108, pk:109,
             price:110, equity:111, law1:112, law2:113, taxS:114, taxI:115,
-            landPrice:"115.1", landPct:"115.2", landBal:"115.3", status:116};
+            buildCost:"115.01", landPrice:"115.1", landPct:"115.2", landBal:"115.3", status:116};
 /* גיבוי לפי מיקום קבוע, אם שורת המזהה חסרה */
-var B1_FB = {floor:1, unit:2, type:3, dir:4, rooms:5, size:6, bal:7, pk:8, price:9, equity:10, law1:11, law2:12, taxS:13, taxI:14, landPrice:15, landPct:16, landBal:17, status:18};
-var B2_FB = {floor:24, ftype:25, unit:26, type:27, dir:28, rooms:29, size:30, bal:31, pk:32, price:33, equity:34, law1:35, law2:36, taxS:37, taxI:38, landPrice:39, landPct:40, landBal:41, status:42};
+var B1_FB = {floor:1, unit:2, type:3, dir:4, rooms:5, size:6, bal:7, pk:8, price:9, equity:10, law1:11, law2:12, taxS:13, taxI:14, buildCost:15, landPrice:16, landPct:17, landBal:18, status:19};
+var B2_FB = {floor:25, ftype:26, unit:27, type:28, dir:29, rooms:30, size:31, bal:32, pk:33, price:34, equity:35, law1:36, law2:37, taxS:38, taxI:39, buildCost:40, landPrice:41, landPct:42, landBal:43, status:44};
 /* ================================================ */
 
 var GVIZ = "https://docs.google.com/spreadsheets/d/"+SHEET_ID+"/gviz/tq?tqx=out:csv&gid="+GID;
@@ -233,6 +233,7 @@ function extract(r, M, bldNum){
     size:toNum(cell(r,M.size)), bal:toNum(cell(r,M.bal)), pk:toNum(cell(r,M.pk)),
     price:price, equity:toNum(cell(r,M.equity)), law1:toNum(cell(r,M.law1)),
     law2:toNum(cell(r,M.law2)), taxS:toNum(cell(r,M.taxS)), taxI:toNum(cell(r,M.taxI)),
+    buildCost:toNum(cell(r,M.buildCost)),
     landPrice:toNum(cell(r,M.landPrice)), landPct:toPct(cell(r,M.landPct)), landBal:toNum(cell(r,M.landBal)),
     cap: ft.indexOf("קפסולה")>=0,
     status: M.status!=null ? statusKey(cell(r,M.status)) : null
@@ -384,11 +385,18 @@ function renderList(){
 }
 function dr(k,v){ return '<div class="dr"><span>'+k+'</span><span>'+v+'</span></div>'; }
 function landRows(d){
-  if(!d.landPrice) return '';
-  return '<div style="border-top:1px dashed var(--line2);margin-top:5px;padding-top:5px;">'
-    +dr("מחיר קרקע",nis(d.landPrice))
-    +dr("אחוז קרקע מהאמדן",(d.landPct?d.landPct+"%":"—"))
-    +dr("יתרת השלמה לקרקע",nis(d.landBal))+'</div>';
+  var h='';
+  if(d.landPrice){
+    h+='<div style="border-top:1px dashed var(--line2);margin-top:5px;padding-top:5px;">'
+      +dr("מחיר קרקע",nis(d.landPrice))
+      +dr("אחוז קרקע מהאמדן",(d.landPct?d.landPct+"%":"—"))
+      +dr("יתרת השלמה לקרקע",nis(d.landBal))+'</div>';
+  }
+  if(d.buildCost){
+    h+='<div style="border-top:1px dashed var(--line2);margin-top:5px;padding-top:5px;">'
+      +dr("אמדן עלות הקמה",nis(d.buildCost))+'</div>';
+  }
+  return h;
 }
 function togRow(id){ open[id]=!open[id]; renderList(); }
 
