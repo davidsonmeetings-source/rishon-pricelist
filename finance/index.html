@@ -1,0 +1,845 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>מחשבון מימון — Forever פארק הים</title>
+</head>
+<body class="locked">
+<style>
+  :root {
+    color-scheme: light;
+    --ground: #f2f5f7;
+    --card: #ffffff;
+    --ink: #14262e;
+    --ink-2: #4d616c;
+    --ink-3: #7e929c;
+    --hairline: rgba(20, 38, 46, 0.12);
+    --grid: rgba(20, 38, 46, 0.08);
+    --brass: #a8874f;
+    --brass-ink: #7d6234;
+    --stage-1: #86b6ef;
+    --stage-2: #2a78d6;
+    --stage-3: #104281;
+    --interest: #a06e14;
+    --good-bg: rgba(42, 120, 214, 0.07);
+    --shadow: 0 1px 2px rgba(20, 38, 46, 0.05), 0 8px 24px rgba(20, 38, 46, 0.06);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) {
+      color-scheme: dark;
+      --ground: #0e181e;
+      --card: #16262e;
+      --ink: #edf3f6;
+      --ink-2: #a8bcc5;
+      --ink-3: #748993;
+      --hairline: rgba(237, 243, 246, 0.14);
+      --grid: rgba(237, 243, 246, 0.09);
+      --brass: #c2a26b;
+      --brass-ink: #d5bc8d;
+      --stage-1: #9ec5f4;
+      --stage-2: #3987e5;
+      --stage-3: #1c5cab;
+      --interest: #c08415;
+      --good-bg: rgba(57, 135, 229, 0.12);
+      --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.25);
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --ground: #0e181e;
+    --card: #16262e;
+    --ink: #edf3f6;
+    --ink-2: #a8bcc5;
+    --ink-3: #748993;
+    --hairline: rgba(237, 243, 246, 0.14);
+    --grid: rgba(237, 243, 246, 0.09);
+    --brass: #c2a26b;
+    --brass-ink: #d5bc8d;
+    --stage-1: #9ec5f4;
+    --stage-2: #3987e5;
+    --stage-3: #1c5cab;
+    --interest: #c08415;
+    --good-bg: rgba(57, 135, 229, 0.12);
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.25);
+  }
+  :root[data-theme="light"] {
+    color-scheme: light;
+    --ground: #f2f5f7;
+    --card: #ffffff;
+    --ink: #14262e;
+    --ink-2: #4d616c;
+    --ink-3: #7e929c;
+    --hairline: rgba(20, 38, 46, 0.12);
+    --grid: rgba(20, 38, 46, 0.08);
+    --brass: #a8874f;
+    --brass-ink: #7d6234;
+    --stage-1: #86b6ef;
+    --stage-2: #2a78d6;
+    --stage-3: #104281;
+    --interest: #a06e14;
+    --good-bg: rgba(42, 120, 214, 0.07);
+    --shadow: 0 1px 2px rgba(20, 38, 46, 0.05), 0 8px 24px rgba(20, 38, 46, 0.06);
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font-family: "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+    font-size: 16px;
+    line-height: 1.55;
+    -webkit-text-size-adjust: 100%;
+  }
+  .wrap { max-width: 780px; margin: 0 auto; padding: 20px 16px 56px; }
+
+  /* ---------- header ---------- */
+  header.brand { text-align: center; padding: 10px 0 18px; }
+  .wordmark {
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 21px;
+    letter-spacing: 0.42em;
+    text-indent: 0.42em;
+    color: var(--ink);
+    font-weight: 400;
+  }
+  .brand-rule { width: 56px; height: 2px; background: var(--brass); margin: 10px auto 12px; border-radius: 1px; }
+  h1 { font-size: 20px; font-weight: 600; margin: 0 0 2px; }
+  .sub { color: var(--ink-2); font-size: 14px; margin: 0; }
+
+  /* ---------- cards ---------- */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--hairline);
+    border-radius: 14px;
+    box-shadow: var(--shadow);
+    margin-top: 16px;
+    overflow: hidden;
+  }
+  .card > .card-head {
+    padding: 13px 18px 11px;
+    border-bottom: 1px solid var(--hairline);
+    display: flex; align-items: baseline; justify-content: space-between; gap: 10px;
+  }
+  .card-title { font-size: 15px; font-weight: 700; }
+  .card-note { font-size: 12.5px; color: var(--ink-3); }
+  .card-body { padding: 16px 18px 18px; }
+
+  /* ---------- inputs ---------- */
+  details.inputs summary {
+    list-style: none; cursor: pointer;
+    padding: 13px 18px; display: flex; justify-content: space-between; align-items: center; gap: 8px;
+    font-weight: 700; font-size: 15px;
+  }
+  details.inputs summary::-webkit-details-marker { display: none; }
+  details.inputs summary .chev { transition: transform 0.18s; color: var(--ink-3); font-size: 13px; }
+  details.inputs[open] summary .chev { transform: rotate(180deg); }
+  details.inputs[open] summary { border-bottom: 1px solid var(--hairline); }
+  .inputs-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 14px; padding: 16px 18px 6px; }
+  .field { display: flex; flex-direction: column; gap: 4px; }
+  .field.full { grid-column: 1 / -1; }
+  .field label { font-size: 12.5px; color: var(--ink-2); font-weight: 600; }
+  .field input {
+    font: inherit; font-variant-numeric: tabular-nums;
+    color: var(--ink); background: var(--ground);
+    border: 1px solid var(--hairline); border-radius: 9px;
+    padding: 8px 10px; direction: ltr; text-align: right; width: 100%;
+  }
+  .field input:focus-visible { outline: 2px solid var(--stage-2); outline-offset: 1px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; padding: 2px 18px 14px; }
+  .chips .lbl { font-size: 12px; color: var(--ink-3); align-self: center; margin-inline-end: 2px; }
+  .chip {
+    font: inherit; font-size: 13px; font-variant-numeric: tabular-nums;
+    border: 1px solid var(--hairline); background: transparent; color: var(--ink-2);
+    border-radius: 999px; padding: 4px 12px; cursor: pointer;
+  }
+  .chip:hover { border-color: var(--stage-2); color: var(--ink); }
+  .chip:focus-visible { outline: 2px solid var(--stage-2); outline-offset: 1px; }
+  .rate-note { grid-column: 1 / -1; font-size: 12px; color: var(--ink-3); margin: -4px 0 8px; }
+
+  /* ---------- timeline ---------- */
+  .tl-bar { display: flex; height: 46px; border-radius: 9px; overflow: hidden; gap: 2px; direction: ltr; }
+  .tl-seg { position: relative; min-width: 3%; }
+  .tl-seg.s1 { background: var(--stage-1); }
+  .tl-seg.s2 { background: var(--stage-2); }
+  .tl-seg.s3 { background: var(--stage-3); }
+  .tl-legend { display: flex; flex-direction: column; gap: 0; margin-top: 12px; }
+  .tl-row {
+    display: grid; grid-template-columns: 14px 1fr auto auto; gap: 10px; align-items: baseline;
+    padding: 7px 2px; border-bottom: 1px dashed var(--grid); font-size: 14px;
+  }
+  .tl-row:last-child { border-bottom: none; }
+  .dot { width: 11px; height: 11px; border-radius: 3px; display: inline-block; transform: translateY(1px); }
+  .tl-when { color: var(--ink-3); font-size: 12.5px; }
+  .tl-amt { font-variant-numeric: tabular-nums; font-weight: 600; white-space: nowrap; }
+  .tl-pct { color: var(--ink-2); font-size: 12.5px; font-variant-numeric: tabular-nums; width: 52px; text-align: left; }
+
+  /* ---------- tracks ---------- */
+  .tracks { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 18px; }
+  .track-btn {
+    font: inherit; text-align: center; cursor: pointer;
+    background: var(--card); color: var(--ink-2);
+    border: 1px solid var(--hairline); border-radius: 12px;
+    padding: 10px 6px 9px; line-height: 1.3;
+  }
+  .track-btn .t-name { font-weight: 700; font-size: 13.5px; color: var(--ink); display: block; }
+  .track-btn .t-tag { font-size: 11.5px; display: block; margin-top: 2px; }
+  .track-btn[aria-pressed="true"] {
+    border-color: var(--brass); box-shadow: inset 0 0 0 1px var(--brass);
+    background: var(--good-bg); color: var(--ink);
+  }
+  .track-btn:focus-visible { outline: 2px solid var(--stage-2); outline-offset: 1px; }
+
+  /* ---------- tiles ---------- */
+  .hero { padding: 18px 18px 14px; text-align: center; }
+  .hero .h-label { font-size: 13px; color: var(--ink-2); font-weight: 600; }
+  .hero .h-value { font-size: 34px; font-weight: 700; letter-spacing: -0.01em; margin: 2px 0 0; }
+  .hero .h-sub { font-size: 13px; color: var(--ink-3); }
+  .hero .h-sub b { color: var(--brass-ink); font-weight: 700; }
+  .tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--hairline); border-top: 1px solid var(--hairline); }
+  .tile { background: var(--card); padding: 12px 14px 13px; }
+  .tile .t-label { font-size: 12px; color: var(--ink-2); font-weight: 600; }
+  .tile .t-value { font-size: 18.5px; font-weight: 700; font-variant-numeric: tabular-nums; margin-top: 1px; }
+  .tile .t-sub { font-size: 11.5px; color: var(--ink-3); margin-top: 1px; }
+
+  .keyline {
+    margin-top: 16px; padding: 13px 16px;
+    background: var(--good-bg); border: 1px solid var(--hairline); border-inline-start: 3px solid var(--brass);
+    border-radius: 10px; font-size: 14.5px;
+  }
+  .keyline .k-tag { font-size: 11.5px; font-weight: 700; color: var(--brass-ink); letter-spacing: 0.06em; display: block; margin-bottom: 3px; }
+
+  /* ---------- chart ---------- */
+  .chart-box { position: relative; direction: ltr; }
+  .chart-box svg { display: block; width: 100%; height: auto; }
+  .bar { cursor: pointer; }
+  .bar:focus-visible { outline: 2px solid var(--stage-2); outline-offset: 1px; }
+  .tooltip {
+    position: absolute; pointer-events: none; z-index: 5;
+    background: var(--ink); color: var(--ground);
+    border-radius: 8px; padding: 7px 10px; font-size: 12.5px; line-height: 1.45;
+    direction: rtl; text-align: right; white-space: nowrap;
+    opacity: 0; transition: opacity 0.12s;
+    font-variant-numeric: tabular-nums;
+  }
+  @media (prefers-reduced-motion: reduce) { .tooltip, .chev { transition: none; } }
+
+  /* ---------- table ---------- */
+  .cmp-scroll { overflow-x: auto; }
+  table.cmp { width: 100%; border-collapse: collapse; font-size: 13.5px; min-width: 540px; }
+  table.cmp th, table.cmp td { padding: 8px 10px; text-align: right; border-bottom: 1px solid var(--grid); vertical-align: top; }
+  table.cmp thead th { font-size: 12.5px; color: var(--ink-2); border-bottom: 1px solid var(--hairline); }
+  table.cmp td { font-variant-numeric: tabular-nums; }
+  table.cmp .metric { color: var(--ink-2); font-weight: 600; font-size: 12.5px; }
+  table.cmp .sel { background: var(--good-bg); }
+  table.cmp tbody tr:last-child td { border-bottom: none; font-weight: 700; }
+
+  /* ---------- actions & footer ---------- */
+  .actions { display: flex; gap: 10px; margin-top: 18px; }
+  .btn {
+    flex: 1; font: inherit; font-weight: 700; font-size: 14.5px; cursor: pointer;
+    border-radius: 11px; padding: 12px 10px; border: 1px solid var(--hairline);
+    background: var(--card); color: var(--ink);
+  }
+  .btn.primary { background: var(--stage-3); border-color: var(--stage-3); color: #fff; }
+  .btn:focus-visible { outline: 2px solid var(--stage-2); outline-offset: 2px; }
+  .toast {
+    position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%);
+    background: var(--ink); color: var(--ground); font-size: 13.5px;
+    padding: 9px 18px; border-radius: 999px; opacity: 0; pointer-events: none; transition: opacity 0.2s;
+  }
+  .toast.show { opacity: 1; }
+  footer.legal { margin-top: 22px; font-size: 11.5px; color: var(--ink-3); line-height: 1.6; text-align: center; }
+  @media (max-width: 480px) {
+    .inputs-grid { grid-template-columns: 1fr 1fr; }
+    .hero .h-value { font-size: 29px; }
+    .tracks { gap: 6px; }
+    .track-btn .t-tag { display: none; }
+  }
+  @media print {
+    body { background: #fff; }
+    .card { box-shadow: none; break-inside: avoid; }
+    .actions, details.inputs .chev { display: none; }
+  }
+</style>
+
+<div class="wrap" dir="rtl">
+  <header class="brand">
+    <div class="wordmark">FOREVER</div>
+    <div class="brand-rule"></div>
+    <h1>מחשבון מימון לרוכש</h1>
+    <p class="sub">פארק הים, ראשון לציון · הדמיית תשלומים וריבית</p>
+  </header>
+
+  <details class="inputs card" open>
+    <summary>נתוני עסקה — לשימוש הסוכן <span class="chev">▼</span></summary>
+    <div class="inputs-grid">
+      <div class="field full">
+        <label for="inV">אמדן דירה (₪)</label>
+        <input id="inV" type="text" inputmode="numeric" value="5,030,000">
+      </div>
+      <div class="field">
+        <label for="inEq">הון עצמי (%)</label>
+        <input id="inEq" type="number" min="10" max="80" step="1" value="20">
+      </div>
+      <div class="field">
+        <label for="inExtra">מזומן נוסף בשלב הקרקע (₪)</label>
+        <input id="inExtra" type="text" inputmode="numeric" value="0">
+      </div>
+      <div class="field">
+        <label for="inPrime">פריים (%)</label>
+        <input id="inPrime" type="number" min="0" max="15" step="0.05" value="4.5">
+      </div>
+      <div class="field">
+        <label for="inMargin">מרווח מעל הפריים (%)</label>
+        <input id="inMargin" type="number" min="0" max="5" step="0.05" value="1.0">
+      </div>
+      <div class="field">
+        <label for="inLand">רכיב קרקע מהאמדן (%)</label>
+        <input id="inLand" type="number" min="30" max="75" step="0.1" value="56.7">
+      </div>
+      <div class="field">
+        <label for="inLandDate">מועד תשלום הקרקע</label>
+        <input id="inLandDate" type="date" value="2027-01-31">
+      </div>
+      <div class="field">
+        <label for="inM2C">חודשים עד תחילת ביצוע</label>
+        <input id="inM2C" type="number" min="0" max="24" step="1" value="5">
+      </div>
+      <div class="field">
+        <label for="inCM">תקופת ביצוע (חודשים)</label>
+        <input id="inCM" type="number" min="12" max="60" step="1" value="36">
+      </div>
+      <p class="rate-note">הריבית מחושבת רבעונית על יתרת הליווי. מרווח: פריים+1% (אומת 03.08.26). פריים ברירת מחדל 4.5% — הנחת ירידה עד נטילת המימון; ניתן לעדכון.</p>
+    </div>
+    <div class="chips" role="group" aria-label="אמדנים מהירים">
+      <span class="lbl">אמדן:</span>
+      <button class="chip" data-v="1950000">1.95M</button>
+      <button class="chip" data-v="2600000">2.6M</button>
+      <button class="chip" data-v="3600000">3.6M</button>
+      <button class="chip" data-v="5030000">5.03M</button>
+      <span class="lbl" style="margin-inline-start:8px">הון עצמי:</span>
+      <button class="chip" data-eq="20">20%</button>
+      <button class="chip" data-eq="30">30%</button>
+      <button class="chip" data-eq="40">40%</button>
+      <button class="chip" data-eq="57">57%</button>
+    </div>
+  </details>
+
+  <section class="card" aria-labelledby="tlTitle">
+    <div class="card-head">
+      <span class="card-title" id="tlTitle">מה משלמים, ומתי</span>
+      <span class="card-note" id="tlNote"></span>
+    </div>
+    <div class="card-body">
+      <div class="tl-bar" id="tlBar" aria-hidden="true"></div>
+      <div class="tl-legend" id="tlLegend"></div>
+    </div>
+  </section>
+
+  <nav class="tracks" aria-label="מסלולי תשלום">
+    <button class="track-btn" id="btnA" aria-pressed="true">
+      <span class="t-name">ריבית שוטפת</span>
+      <span class="t-tag">המסלול הקיים</span>
+    </button>
+    <button class="track-btn" id="btnB" aria-pressed="false">
+      <span class="t-name">גרייס מלא</span>
+      <span class="t-tag">הכול במסירה</span>
+    </button>
+    <button class="track-btn" id="btnC" aria-pressed="false">
+      <span class="t-name">קרקע במזומן</span>
+      <span class="t-tag">בלי הלוואת קרקע</span>
+    </button>
+  </nav>
+
+  <section class="card" aria-labelledby="heroLabel">
+    <div class="hero">
+      <div class="h-label" id="heroLabel">עלות כוללת משוערת (אמדן + ריבית)</div>
+      <div class="h-value" id="heroValue">—</div>
+      <div class="h-sub" id="heroSub">—</div>
+    </div>
+    <div class="tiles">
+      <div class="tile">
+        <div class="t-label">מזומן עד שלב הקרקע</div>
+        <div class="t-value" id="tCash">—</div>
+        <div class="t-sub" id="tCashSub"></div>
+      </div>
+      <div class="tile">
+        <div class="t-label" id="tPayLabel">תשלומי ריבית עד המסירה</div>
+        <div class="t-value" id="tPay">—</div>
+        <div class="t-sub" id="tPaySub"></div>
+      </div>
+      <div class="tile">
+        <div class="t-label">סה״כ ריבית בתקופה</div>
+        <div class="t-value" id="tInt">—</div>
+        <div class="t-sub" id="tIntSub"></div>
+      </div>
+      <div class="tile">
+        <div class="t-label">יתרה לסילוק במסירה</div>
+        <div class="t-value" id="tDebt">—</div>
+        <div class="t-sub" id="tDebtSub"></div>
+      </div>
+    </div>
+  </section>
+
+  <div class="keyline" id="keyline">
+    <span class="k-tag">משפט מפתח ללקוח</span>
+    <span id="keylineText"></span>
+  </div>
+
+  <section class="card" aria-labelledby="chartTitle">
+    <div class="card-head">
+      <span class="card-title" id="chartTitle">ריבית לאורך התקופה, לפי רבעון</span>
+      <span class="card-note" id="chartNote"></span>
+    </div>
+    <div class="card-body">
+      <div class="chart-box" id="chartBox">
+        <div class="tooltip" id="tip"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="card" aria-labelledby="cmpTitle">
+    <div class="card-head">
+      <span class="card-title" id="cmpTitle">השוואת המסלולים</span>
+      <span class="card-note">לאותה דירה, אותם נתונים</span>
+    </div>
+    <div class="card-body cmp-scroll">
+      <table class="cmp" id="cmpTable"></table>
+    </div>
+  </section>
+
+  <div class="actions">
+    <button class="btn primary" id="btnCopy">העתקת סיכום ללקוח</button>
+    <button class="btn" id="btnPrint">הדפסה / PDF</button>
+  </div>
+
+  <footer class="legal">
+    הנתונים מוצגים להמחשה בלבד ואינם מהווים הצעה, התחייבות, ייעוץ פיננסי או תחליף לבדיקה פרטנית.
+    הריבית נגזרת מריבית הפריים והיא משתנה מעת לעת; החישוב מבוסס על אמדן ועל לוח משיכות ליניארי משוער.
+    התנאים המחייבים הם אלה שייקבעו בהסכמי השיתוף ובהסכמי הליווי הבנקאי בלבד.
+  </footer>
+</div>
+<div class="toast" id="toast">הסיכום הועתק</div>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ---------- state ---------- */
+  var state = {
+    V: 5030000,
+    eqPct: 20,
+    extra: 0,
+    prime: 4.5,
+    margin: 1.0,
+    landPct: 56.7,
+    landDate: new Date(2027, 0, 31),
+    m2c: 5,
+    cm: 36,
+    track: 'A'
+  };
+
+  /* ---------- utils ---------- */
+  function nis(n) { return Math.round(n).toLocaleString('he-IL') + ' ₪'; }
+  function nisShort(n) {
+    var a = Math.abs(n);
+    if (a >= 1000000) return (n / 1000000).toLocaleString('he-IL', { maximumFractionDigits: 2 }) + 'M ₪';
+    if (a >= 1000) return Math.round(n / 1000).toLocaleString('he-IL') + 'K ₪';
+    return nis(n);
+  }
+  function pct(n, d) { return n.toLocaleString('he-IL', { maximumFractionDigits: d == null ? 1 : d }) + '%'; }
+  function addMonths(d, m) {
+    var r = new Date(d.getTime());
+    var day = r.getDate();
+    r.setDate(1); r.setMonth(r.getMonth() + m);
+    var last = new Date(r.getFullYear(), r.getMonth() + 1, 0).getDate();
+    r.setDate(Math.min(day, last));
+    return r;
+  }
+  function mmyy(d) {
+    return String(d.getMonth() + 1).padStart(2, '0') + '/' + String(d.getFullYear() % 100).padStart(2, '0');
+  }
+  function parseNum(s) { return parseFloat(String(s).replace(/[^\d.]/g, '')) || 0; }
+
+  /* ---------- engine ----------
+     Mirrors the verified workbook model: quarterly interest on
+     (land loan + cumulative construction draws incl. current quarter).
+     grace=false: interest paid each quarter (simple).
+     grace=true : interest capitalized quarterly (compound), nothing paid until delivery. */
+  function computeTrack(grace, eqShekels, extraShekels) {
+    var V = state.V;
+    var L = V * state.landPct / 100;
+    var C = V - L;
+    var eq = Math.min(eqShekels, V);
+    var landLoan = Math.max(0, L - eq - extraShekels);
+    var leftover = Math.max(0, eq + extraShekels - L);
+    var r = (state.prime + state.margin) / 100, q = r / 4;
+    var totalM = state.m2c + state.cm;
+    var quarters = Math.ceil(totalM / 3);
+    var drawPM = C / state.cm;
+
+    var rows = [], cumNet = 0, balance = landLoan, totalInt = 0, left = leftover;
+    for (var k = 1; k <= quarters; k++) {
+      var m1 = (k - 1) * 3 + 1, m2 = Math.min(k * 3, totalM);
+      var cmn = Math.max(0, m2 - Math.max(m1, state.m2c + 1) + 1);
+      var draws = cmn * drawPM;
+      var off = Math.min(left, draws); draws -= off; left -= off;
+      cumNet += draws;
+      var interest = grace ? (balance + draws) * q : (landLoan + cumNet) * q;
+      totalInt += interest;
+      balance = balance + draws + interest;
+      rows.push({ k: k, date: addMonths(state.landDate, (k - 1) * 3), interest: interest, balance: grace ? balance : landLoan + cumNet });
+    }
+    var principal = landLoan + cumNet;
+    var debtAtDelivery = grace ? balance : principal;
+    var firstPay = 0;
+    for (var i = 0; i < rows.length; i++) { if (rows[i].interest > 0.5) { firstPay = rows[i].interest; break; } }
+    var peak = rows.reduce(function (m, r2) { return Math.max(m, r2.interest); }, 0);
+    return {
+      grace: grace, V: V, L: L, C: C, eq: eq, extra: extraShekels,
+      landLoan: landLoan, rows: rows, totalInt: totalInt,
+      debtAtDelivery: debtAtDelivery, principal: principal,
+      firstPay: firstPay, peak: peak,
+      cashToLand: Math.min(eq + extraShekels, Math.max(L, eq + extraShekels)),
+      delivery: addMonths(state.landDate, totalM), quarters: quarters
+    };
+  }
+
+  function computeAll() {
+    var eqV = state.V * state.eqPct / 100;
+    var L = state.V * state.landPct / 100;
+    return {
+      A: computeTrack(false, eqV, state.extra),
+      B: computeTrack(true, eqV, state.extra),
+      C: computeTrack(true, Math.max(eqV, L), 0)
+    };
+  }
+
+  /* ---------- rendering ---------- */
+  var $ = function (id) { return document.getElementById(id); };
+
+  function renderTimeline(res) {
+    var t = res.A;
+    var segs = [
+      { cls: 's1', name: 'הון עצמי בחתימה', amt: t.eq, when: 'במעמד ההצטרפות', color: 'var(--stage-1)' },
+      { cls: 's2', name: 'השלמת רכיב הקרקע', amt: Math.max(0, t.L - t.eq), when: mmyy(state.landDate) + ' · מזומן או ליווי', color: 'var(--stage-2)' },
+      { cls: 's3', name: 'תשלומי ביצוע', amt: t.C, when: mmyy(addMonths(state.landDate, state.m2c)) + '–' + mmyy(t.delivery) + ' · דרך הליווי', color: 'var(--stage-3)' }
+    ];
+    var bar = $('tlBar'); bar.innerHTML = '';
+    segs.forEach(function (s) {
+      if (s.amt <= 0) return;
+      var d = document.createElement('div');
+      d.className = 'tl-seg ' + s.cls;
+      d.style.flexGrow = String(Math.max(s.amt, 1));
+      bar.appendChild(d);
+    });
+    var lg = $('tlLegend'); lg.innerHTML = '';
+    segs.forEach(function (s) {
+      var row = document.createElement('div'); row.className = 'tl-row';
+      row.innerHTML = '<span class="dot" style="background:' + s.color + '"></span>' +
+        '<span>' + s.name + '<br><span class="tl-when">' + s.when + '</span></span>' +
+        '<span class="tl-amt">' + nis(s.amt) + '</span>' +
+        '<span class="tl-pct">' + pct(s.amt / t.V * 100) + '</span>';
+      lg.appendChild(row);
+    });
+    $('tlNote').textContent = 'מסירה משוערת ' + mmyy(t.delivery);
+  }
+
+  function trackMeta(res) {
+    return {
+      A: {
+        name: 'ריבית שוטפת (המסלול הקיים)',
+        payLabel: 'תשלומי ריבית עד המסירה',
+        chartNote: 'משולם בפועל מדי רבעון',
+        key: 'משלמים ' + pct(state.eqPct, 0) + ' בהצטרפות, רכיב הקרקע מושלם ב־' + mmyy(state.landDate) +
+          ' באמצעות הליווי הבנקאי, ומכאן ריבית שוטפת שמתחילה בכ־' + nis(res.A.firstPay / 3) +
+          ' בחודש ומגיעה בשיא לכ־' + nis(res.A.peak / 3) + ' בחודש, עד המפתח.'
+      },
+      B: {
+        name: 'גרייס מלא (הכול במסירה)',
+        payLabel: 'תשלומים בתקופת הבנייה',
+        chartNote: 'נצברת ליתרה, לא משולמת בדרך',
+        key: 'משלמים ' + pct(state.eqPct, 0) + ' בהצטרפות — ולא עוד שקל עד המפתח. הריבית נצברת ליתרה ומסתכמת בכ־' +
+          nisShort(res.B.totalInt) + ', והכול נסגר במסירה מול המשכנתא.'
+      },
+      C: {
+        name: 'קרקע במזומן (בלי הלוואת קרקע)',
+        payLabel: 'תשלומים בתקופת הבנייה',
+        chartNote: 'ריבית על הביצוע בלבד, נצברת',
+        key: 'מכסים את רכיב הקרקע (' + pct(state.landPct) + ') בהון עצמי — ומכאן שקט מלא: אפס תשלומים עד המפתח, ' +
+          'והריבית יורדת לכ־' + nisShort(res.C.totalInt) + ' במקום ' + nisShort(res.B.totalInt) +
+          ' — חיסכון של כ־' + nisShort(res.B.totalInt - res.C.totalInt) + '.'
+      }
+    };
+  }
+
+  function renderTiles(res) {
+    var t = res[state.track];
+    var meta = trackMeta(res)[state.track];
+    $('heroValue').textContent = nis(t.V + t.totalInt);
+    $('heroSub').innerHTML = 'אמדן ' + nisShort(t.V) + ' + ריבית <b>' + nisShort(t.totalInt) + '</b> (תוספת של ' + pct(t.totalInt / t.V * 100) + ')';
+
+    var cashLand = t.eq + (state.track === 'C' ? Math.max(0, t.L - t.eq) : t.extra);
+    if (state.track === 'C') cashLand = Math.max(t.eq, t.L);
+    $('tCash').textContent = nis(cashLand);
+    $('tCashSub').textContent = pct(cashLand / t.V * 100) + ' מהאמדן, עד ' + mmyy(state.landDate);
+
+    $('tPayLabel').textContent = meta.payLabel;
+    if (state.track === 'A') {
+      $('tPay').textContent = nis(t.totalInt);
+      $('tPaySub').textContent = 'מ־' + nis(t.firstPay / 3) + ' עד ' + nis(t.peak / 3) + ' בחודש';
+    } else {
+      $('tPay').textContent = '0 ₪';
+      $('tPaySub').textContent = 'הריבית נצברת ונפרעת במסירה';
+    }
+
+    $('tInt').textContent = nis(t.totalInt);
+    $('tIntSub').textContent = pct(t.totalInt / t.V * 100) + ' מהאמדן · פריים ' + pct(state.prime, 2) + ' + ' + pct(state.margin, 2);
+
+    $('tDebt').textContent = nis(t.debtAtDelivery);
+    $('tDebtSub').textContent = state.track === 'A' ? 'קרן הליווי, נסגרת מול משכנתא' : 'קרן + ריבית שנצברה, מול משכנתא';
+
+    $('keylineText').textContent = meta.key;
+    $('chartNote').textContent = meta.chartNote;
+  }
+
+  function renderChart(res) {
+    var t = res[state.track];
+    var W = 720, H = 200, padL = 8, padR = 8, padT = 26, padB = 30;
+    var n = t.rows.length;
+    var maxV = Math.max.apply(null, t.rows.map(function (r) { return r.interest; }).concat([1]));
+    var iw = (W - padL - padR) / n;
+    var bw = Math.max(6, iw - 3);
+    var svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="ריבית רבעונית לאורך התקופה">';
+    /* gridlines */
+    var steps = 3;
+    for (var g = 1; g <= steps; g++) {
+      var gy = padT + (H - padT - padB) * (1 - g / steps);
+      svg += '<line x1="' + padL + '" x2="' + (W - padR) + '" y1="' + gy + '" y2="' + gy + '" stroke="var(--grid)" stroke-width="1"/>';
+      svg += '<text x="' + (W - padR) + '" y="' + (gy - 4) + '" text-anchor="end" font-size="10" fill="var(--ink-3)">' +
+        Math.round(maxV * g / steps / 1000).toLocaleString('en-US') + 'K</text>';
+    }
+    /* baseline */
+    var y0 = H - padB;
+    svg += '<line x1="' + padL + '" x2="' + (W - padR) + '" y1="' + y0 + '" y2="' + y0 + '" stroke="var(--hairline)" stroke-width="1"/>';
+    var peakIdx = -1, peakVal = -1, firstIdx = -1;
+    t.rows.forEach(function (r, i) {
+      if (r.interest > peakVal) { peakVal = r.interest; peakIdx = i; }
+      if (firstIdx < 0 && r.interest > 0.5) firstIdx = i;
+    });
+    t.rows.forEach(function (r, i) {
+      var h = maxV > 0 ? (r.interest / maxV) * (H - padT - padB) : 0;
+      var x = padL + i * iw + (iw - bw) / 2;
+      var y = y0 - h;
+      var op = (state.track === 'A') ? '1' : '0.72';
+      svg += '<rect class="bar" tabindex="0" data-i="' + i + '" x="' + x.toFixed(1) + '" y="' + y.toFixed(1) +
+        '" width="' + bw.toFixed(1) + '" height="' + Math.max(h, 1).toFixed(1) +
+        '" rx="3" fill="var(--interest)" fill-opacity="' + op + '"><title></title></rect>';
+      if (i === peakIdx || i === firstIdx) {
+        svg += '<text x="' + (x + bw / 2) + '" y="' + (y - 6) + '" text-anchor="middle" font-size="10.5" font-weight="700" fill="var(--ink-2)">' +
+          Math.round(r.interest / 1000) + 'K</text>';
+      }
+      if (i === 0 || i === n - 1 || i === Math.floor(n / 2)) {
+        svg += '<text x="' + (x + bw / 2) + '" y="' + (H - 10) + '" text-anchor="middle" font-size="10" fill="var(--ink-3)">' + mmyy(r.date) + '</text>';
+      }
+    });
+    svg += '</svg>';
+    var box = $('chartBox');
+    var tip = $('tip');
+    box.innerHTML = '';
+    box.appendChild(tip);
+    var holder = document.createElement('div');
+    holder.innerHTML = svg;
+    box.appendChild(holder.firstChild);
+
+    function showTip(i, target) {
+      var r = t.rows[i];
+      tip.innerHTML = 'רבעון ' + r.k + ' · ' + mmyy(r.date) + '<br>' +
+        'ריבית: <b>' + nis(r.interest) + '</b> (~' + nis(r.interest / 3) + ' בחודש)<br>' +
+        'יתרת ליווי: ' + nis(r.balance);
+      var bb = target.getBoundingClientRect(), pb = box.getBoundingClientRect();
+      tip.style.opacity = '1';
+      var lx = bb.left - pb.left + bb.width / 2;
+      tip.style.left = Math.min(Math.max(lx, 80), pb.width - 80) + 'px';
+      tip.style.top = Math.max(bb.top - pb.top - 66, 0) + 'px';
+      tip.style.transform = 'translateX(-50%)';
+    }
+    box.querySelectorAll('.bar').forEach(function (el) {
+      var i = parseInt(el.getAttribute('data-i'), 10);
+      el.addEventListener('mouseenter', function () { showTip(i, el); });
+      el.addEventListener('focus', function () { showTip(i, el); });
+      el.addEventListener('mouseleave', function () { tip.style.opacity = '0'; });
+      el.addEventListener('blur', function () { tip.style.opacity = '0'; });
+    });
+  }
+
+  function renderTable(res) {
+    var m = trackMeta(res);
+    var cols = ['A', 'B', 'C'];
+    var head = '<thead><tr><th></th>' + cols.map(function (c) {
+      return '<th class="' + (state.track === c ? 'sel' : '') + '">' + m[c].name.split(' (')[0] + '</th>';
+    }).join('') + '</tr></thead>';
+    function row(label, fn, sub) {
+      return '<tr><td class="metric">' + label + (sub ? '<br><span style="font-weight:400">' + sub + '</span>' : '') + '</td>' +
+        cols.map(function (c) {
+          return '<td class="' + (state.track === c ? 'sel' : '') + '">' + fn(res[c], c) + '</td>';
+        }).join('') + '</tr>';
+    }
+    var L = state.V * state.landPct / 100;
+    var body = '<tbody>' +
+      row('מזומן עד שלב הקרקע', function (t, c) {
+        var v = c === 'C' ? Math.max(t.eq, L) : t.eq + t.extra;
+        return nis(v) + '<br><span style="color:var(--ink-3);font-size:11.5px">' + pct(v / t.V * 100) + '</span>';
+      }) +
+      row('תשלומים בזמן הבנייה', function (t, c) {
+        return c === 'A' ? nis(t.totalInt) + '<br><span style="color:var(--ink-3);font-size:11.5px">' +
+          nis(t.firstPay / 3) + '–' + nis(t.peak / 3) + ' לחודש</span>' : '0 ₪';
+      }) +
+      row('יתרה לסילוק במסירה', function (t) { return nis(t.debtAtDelivery); }) +
+      row('סה״כ ריבית', function (t) {
+        return nis(t.totalInt) + '<br><span style="color:var(--ink-3);font-size:11.5px">' + pct(t.totalInt / t.V * 100) + '</span>';
+      }) +
+      row('עלות כוללת משוערת', function (t) { return nis(t.V + t.totalInt); }) +
+      '</tbody>';
+    $('cmpTable').innerHTML = head + body;
+  }
+
+  function summaryText(res) {
+    var t = res[state.track];
+    var m = trackMeta(res)[state.track];
+    var L = state.V * state.landPct / 100;
+    var cash = state.track === 'C' ? Math.max(t.eq, L) : t.eq + t.extra;
+    var lines = [
+      'Forever · פארק הים ראשון לציון — תמונת מימון (הדמיה)',
+      '',
+      'אמדן דירה: ' + nis(t.V),
+      'מסלול: ' + m.name,
+      'ריבית: פריים ' + pct(state.prime, 2) + ' + ' + pct(state.margin, 2) + ' (משתנה)',
+      '',
+      '· מזומן עד שלב הקרקע (' + mmyy(state.landDate) + '): ' + nis(cash) + ' (' + pct(cash / t.V * 100) + ')',
+      state.track === 'A'
+        ? '· ריבית שוטפת עד המסירה: ' + nis(t.totalInt) + ' (כ־' + nis(t.firstPay / 3) + ' עד ' + nis(t.peak / 3) + ' בחודש)'
+        : '· תשלומים בתקופת הבנייה: 0 ₪ (הריבית נצברת ליתרה)',
+      '· יתרה לסילוק במסירה (' + mmyy(t.delivery) + '): ' + nis(t.debtAtDelivery),
+      '· סה״כ ריבית: ' + nis(t.totalInt) + ' (' + pct(t.totalInt / t.V * 100) + ' מהאמדן)',
+      '· עלות כוללת משוערת: ' + nis(t.V + t.totalInt),
+      '',
+      '* להמחשה בלבד; אינו הצעה או התחייבות. הריבית משתנה עם הפריים; התנאים המחייבים — בהסכמי השיתוף והליווי.'
+    ];
+    return lines.join('\n');
+  }
+
+  function renderAll() {
+    var res = computeAll();
+    renderTimeline(res);
+    renderTiles(res);
+    renderChart(res);
+    renderTable(res);
+  }
+
+  /* ---------- wiring ---------- */
+  function bindMoney(id, key) {
+    var el = $(id);
+    el.addEventListener('input', function () {
+      var v = parseNum(el.value);
+      state[key] = v;
+      renderAll();
+    });
+    el.addEventListener('blur', function () {
+      el.value = state[key] ? Math.round(state[key]).toLocaleString('en-US') : '0';
+    });
+  }
+  bindMoney('inV', 'V');
+  bindMoney('inExtra', 'extra');
+
+  [['inEq', 'eqPct'], ['inPrime', 'prime'], ['inMargin', 'margin'], ['inLand', 'landPct'], ['inM2C', 'm2c'], ['inCM', 'cm']].forEach(function (p) {
+    $(p[0]).addEventListener('input', function () {
+      var v = parseFloat($(p[0]).value);
+      if (!isNaN(v)) { state[p[1]] = v; renderAll(); }
+    });
+  });
+  $('inLandDate').addEventListener('input', function () {
+    var v = $('inLandDate').valueAsDate;
+    if (v) { state.landDate = new Date(v.getFullYear(), v.getMonth(), v.getDate()); renderAll(); }
+  });
+
+  document.querySelectorAll('.chip').forEach(function (ch) {
+    ch.addEventListener('click', function () {
+      if (ch.dataset.v) { state.V = parseInt(ch.dataset.v, 10); $('inV').value = state.V.toLocaleString('en-US'); }
+      if (ch.dataset.eq) { state.eqPct = parseInt(ch.dataset.eq, 10); $('inEq').value = state.eqPct; }
+      renderAll();
+    });
+  });
+
+  ['A', 'B', 'C'].forEach(function (c) {
+    $('btn' + c).addEventListener('click', function () {
+      state.track = c;
+      ['A', 'B', 'C'].forEach(function (x) { $('btn' + x).setAttribute('aria-pressed', String(x === c)); });
+      renderAll();
+    });
+  });
+
+  $('btnCopy').addEventListener('click', function () {
+    var txt = summaryText(computeAll());
+    function done() {
+      var t = $('toast'); t.classList.add('show');
+      setTimeout(function () { t.classList.remove('show'); }, 1800);
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(txt).then(done, function () { fallbackCopy(txt); done(); });
+    } else { fallbackCopy(txt); done(); }
+  });
+  function fallbackCopy(txt) {
+    var ta = document.createElement('textarea');
+    ta.value = txt; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); } catch (e) {}
+    document.body.removeChild(ta);
+  }
+  $('btnPrint').addEventListener('click', function () { window.print(); });
+
+  renderAll();
+})();
+</script>
+
+<div id="gate" dir="rtl">
+  <div class="gate-card">
+    <div class="gate-mark">FOREVER</div>
+    <div class="gate-rule"></div>
+    <p class="gate-note">גרסת בדיקה למנהלים</p>
+    <input id="gateIn" type="password" inputmode="numeric" autocomplete="off" placeholder="קוד גישה" aria-label="קוד גישה">
+    <button id="gateBtn" type="button">כניסה</button>
+    <p id="gateErr" class="gate-err" hidden>קוד שגוי</p>
+  </div>
+</div>
+<style>
+  #gate { position: fixed; inset: 0; z-index: 999; background: var(--ground); display: flex; align-items: center; justify-content: center; padding: 20px; }
+  body.locked .wrap { display: none; }
+  body:not(.locked) #gate { display: none; }
+  .gate-card { background: var(--card); border: 1px solid var(--hairline); border-radius: 16px; box-shadow: var(--shadow); padding: 30px 26px; width: 100%; max-width: 320px; text-align: center; }
+  .gate-mark { font-family: Georgia, serif; letter-spacing: 0.4em; text-indent: 0.4em; font-size: 17px; }
+  .gate-rule { width: 44px; height: 2px; background: var(--brass); margin: 10px auto 6px; }
+  .gate-note { color: var(--ink-2); font-size: 13.5px; margin: 0 0 14px; }
+  #gateIn { width: 100%; font: inherit; font-size: 18px; text-align: center; letter-spacing: 0.3em; padding: 10px; border: 1px solid var(--hairline); border-radius: 10px; background: var(--ground); color: var(--ink); }
+  #gateBtn { width: 100%; margin-top: 10px; font: inherit; font-weight: 700; padding: 11px; border: none; border-radius: 10px; background: var(--stage-3); color: #fff; cursor: pointer; }
+  .gate-err { color: #c0392b; font-size: 13px; margin: 10px 0 0; }
+</style>
+<script>
+(function () {
+  var KEY = 'forever_fin_ok';
+  function unlock() { document.body.classList.remove('locked'); }
+  if (sessionStorage.getItem(KEY) === '1') { unlock(); return; }
+  var inp = document.getElementById('gateIn'), btn = document.getElementById('gateBtn'), err = document.getElementById('gateErr');
+  function tryGo() {
+    if (inp.value.trim() === '4433') { sessionStorage.setItem(KEY, '1'); unlock(); }
+    else { err.hidden = false; inp.value = ''; inp.focus(); }
+  }
+  btn.addEventListener('click', tryGo);
+  inp.addEventListener('keydown', function (e) { if (e.key === 'Enter') tryGo(); });
+})();
+</script>
+</body>
+</html>
