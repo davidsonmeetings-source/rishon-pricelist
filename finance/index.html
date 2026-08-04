@@ -159,6 +159,19 @@
   .chip:focus-visible { outline: 2px solid var(--stage-2); outline-offset: 1px; }
   .rate-note { grid-column: 1 / -1; font-size: 12px; color: var(--ink-3); margin: -4px 0 8px; }
 
+  /* ---------- apartment picker ---------- */
+  .pick-row { display: flex; gap: 8px; }
+  .pick-row select {
+    flex: 1; min-width: 0; font: inherit; color: var(--ink); background: var(--ground);
+    border: 1px solid var(--hairline); border-radius: 9px; padding: 8px 10px;
+  }
+  .pick-row select:focus-visible { outline: 2px solid var(--stage-2); outline-offset: 1px; }
+  .apt-info { margin-top: 12px; font-size: 13.5px; }
+  .apt-info .ai-row { display: flex; justify-content: space-between; gap: 10px; padding: 5px 2px; border-bottom: 1px dashed var(--grid); }
+  .apt-info .ai-row:last-child { border-bottom: none; }
+  .apt-info .ai-row span:first-child { color: var(--ink-2); }
+  .apt-info .ai-row span:last-child { font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
+
   /* ---------- timeline ---------- */
   .tl-bar { display: flex; height: 46px; border-radius: 9px; overflow: hidden; gap: 2px; direction: ltr; }
   .tl-seg { position: relative; min-width: 3%; }
@@ -273,7 +286,26 @@
     <p class="sub">פארק הים, ראשון לציון · הדמיית תשלומים וריבית</p>
   </header>
 
-  <details class="inputs card" open>
+  <section class="card" aria-labelledby="pickTitle">
+    <div class="card-head">
+      <span class="card-title" id="pickTitle">בחירת דירה מהמחירון</span>
+      <span class="card-note" id="pickNote">טוען מחירון…</span>
+    </div>
+    <div class="card-body">
+      <div class="pick-row">
+        <select id="pickBld" aria-label="בניין">
+          <option value="1">בוטיק 9 ק'</option>
+          <option value="2">מגדל 20 ק'</option>
+        </select>
+        <select id="pickUnit" aria-label="דירה">
+          <option value="">בחירת דירה…</option>
+        </select>
+      </div>
+      <div class="apt-info" id="aptInfo" hidden></div>
+    </div>
+  </section>
+
+  <details class="inputs card">
     <summary>נתוני עסקה — לשימוש הסוכן <span class="chev">▼</span></summary>
     <div class="inputs-grid">
       <div class="field full">
@@ -439,7 +471,8 @@
     landDate: new Date(2027, 0, 31),
     m2c: 5,
     cm: 36,
-    track: 'A'
+    track: 'A',
+    apt: null
   };
 
   /* ---------- utils ---------- */
@@ -614,7 +647,6 @@
     var iw = (W - padL - padR) / n;
     var bw = Math.max(6, iw - 3);
     var svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="ריבית רבעונית לאורך התקופה">';
-    /* gridlines */
     var steps = 3;
     for (var g = 1; g <= steps; g++) {
       var gy = padT + (H - padT - padB) * (1 - g / steps);
@@ -622,7 +654,6 @@
       svg += '<text x="' + (W - padR) + '" y="' + (gy - 4) + '" text-anchor="end" font-size="10" fill="var(--ink-3)">' +
         Math.round(maxV * g / steps / 1000).toLocaleString('en-US') + 'K</text>';
     }
-    /* baseline */
     var y0 = H - padB;
     svg += '<line x1="' + padL + '" x2="' + (W - padR) + '" y1="' + y0 + '" y2="' + y0 + '" stroke="var(--hairline)" stroke-width="1"/>';
     var peakIdx = -1, peakVal = -1, firstIdx = -1;
@@ -715,7 +746,7 @@
     var lines = [
       'Forever · פארק הים ראשון לציון — תמונת מימון (הדמיה)',
       '',
-      'אמדן דירה: ' + nis(t.V),
+      (state.apt ? state.apt + '\n' : '') + 'אמדן דירה: ' + nis(t.V),
       'מסלול: ' + m.name,
       'ריבית: פריים ' + pct(state.prime, 2) + ' + ' + pct(state.margin, 2) + ' (משתנה)',
       '',
@@ -800,6 +831,144 @@
     document.body.removeChild(ta);
   }
   $('btnPrint').addEventListener('click', function () { window.print(); });
+
+  /* ---------- pricelist integration ----------
+     Same live Google Sheet + parsing as the agents pricelist (incl. the
+     "מזהה לקלוד" ID row and the two-buildings-side-by-side layout). */
+  var SHEET_ID = '1sDH0j-gkiaqojtznY_FnIq8SHj0lzPAQVsRcBNuOM44';
+  var GID = '815985993';
+  var GVIZ = 'https://docs.google.com/spreadsheets/d/' + SHEET_ID + '/gviz/tq?tqx=out:csv&gid=' + GID;
+  var IDB1 = { floor: 1, unit: 2, rooms: 5, size: 6, price: 9, equity: 10, buildCost: '14.01', landPrice: '14.1', landBal: '14.3', status: 15 };
+  var IDB2 = { floor: 101, unit: 103, rooms: 106, size: 107, price: 110, equity: 111, buildCost: '115.01', landPrice: '115.1', landBal: '115.3', status: 116 };
+  var B1_FB = { floor: 1, unit: 2, rooms: 5, size: 6, price: 9, equity: 10, buildCost: 15, landPrice: 16, landBal: 18, status: 19 };
+  var B2_FB = { floor: 25, unit: 27, rooms: 30, size: 31, price: 34, equity: 35, buildCost: 40, landPrice: 41, landBal: 43, status: 44 };
+  var APTS = [];
+
+  function parseCSV(text) {
+    var rows = [], row = [], cur = '', q = false;
+    for (var i = 0; i < text.length; i++) {
+      var ch = text[i];
+      if (q) { if (ch === '"') { if (text[i + 1] === '"') { cur += '"'; i++; } else q = false; } else cur += ch; }
+      else {
+        if (ch === '"') q = true; else if (ch === ',') { row.push(cur); cur = ''; }
+        else if (ch === '\n') { row.push(cur); rows.push(row); row = []; cur = ''; }
+        else if (ch === '\r') { } else cur += ch;
+      }
+    }
+    if (cur.length || row.length) { row.push(cur); rows.push(row); }
+    return rows;
+  }
+  function cellAt(r, i) { return (i != null && r[i] != null) ? String(r[i]).trim() : ''; }
+  function sheetNum(s) { var d = (s || '').replace(/[^\d]/g, ''); return d ? parseInt(d, 10) : 0; }
+  function statusKey(s) {
+    s = (s || '').replace(/"/g, '').trim();
+    if (s.indexOf('תפוס') >= 0 || s.indexOf('נמכר') >= 0) return 'sold';
+    if (s.indexOf('שמור') >= 0 || s.indexOf('שריון') >= 0) return 'hold';
+    return null;
+  }
+  function buildIdCol(rows) {
+    for (var i = 0; i < rows.length; i++) {
+      if (cellAt(rows[i], 0).indexOf('מזהה') >= 0) {
+        var map = {};
+        for (var j = 0; j < rows[i].length; j++) { var v = cellAt(rows[i], j); if (/^\d+(\.\d+)?$/.test(v)) map[v.replace(/\.0+$/, '')] = j; }
+        return map;
+      }
+    }
+    return null;
+  }
+  function resolveMap(idMap, id2col) { var m = {}; for (var k in idMap) { var c = id2col[idMap[k]]; m[k] = (c == null ? null : c); } return m; }
+  function colsOk(m) { return m && m.unit != null && m.price != null; }
+  function extractApt(r, M, b) {
+    var unit = cellAt(r, M.unit), price = sheetNum(cellAt(r, M.price));
+    if (!/^\d+$/.test(unit) || price < 100000) return null;
+    return {
+      bld: b, floor: sheetNum(cellAt(r, M.floor)), unit: parseInt(unit, 10),
+      rooms: sheetNum(cellAt(r, M.rooms)), size: sheetNum(cellAt(r, M.size)),
+      price: price, equity: sheetNum(cellAt(r, M.equity)),
+      buildCost: sheetNum(cellAt(r, M.buildCost)), landPrice: sheetNum(cellAt(r, M.landPrice)),
+      landBal: sheetNum(cellAt(r, M.landBal)), status: statusKey(cellAt(r, M.status))
+    };
+  }
+
+  function fillUnits() {
+    var b = parseInt($('pickBld').value, 10);
+    var sel = $('pickUnit');
+    var opts = ['<option value="">בחירת דירה…</option>'];
+    APTS.filter(function (d) { return d.bld === b; })
+      .sort(function (x, y) { return x.floor - y.floor || x.unit - y.unit; })
+      .forEach(function (d) {
+        var st = d.status === 'sold' ? ' · נמכר' : (d.status === 'hold' ? ' · שמור' : '');
+        opts.push('<option value="' + d.bld + '-' + d.unit + '">דירה ' + d.unit + ' · ק.' + d.floor + ' · ' + d.rooms + ' חד׳ · ' + d.size + ' מ״ר · ' + Math.round(d.price / 1000).toLocaleString('en-US') + 'K' + st + '</option>');
+      });
+    sel.innerHTML = opts.join('');
+  }
+
+  function applyApt(d) {
+    state.V = d.price;
+    var C = (d.buildCost > 0 && d.buildCost < d.price) ? d.buildCost : Math.round(d.price * 0.433);
+    var landStage = d.price - C;
+    state.landPct = landStage / d.price * 100;
+    state.apt = 'דירה ' + d.unit + ' · ' + (d.bld === 1 ? 'בוטיק 9 ק׳' : 'מגדל 20 ק׳') + ' · ק.' + d.floor + ' · ' + d.rooms + ' חד׳ · ' + d.size + ' מ״ר';
+    $('inV').value = d.price.toLocaleString('en-US');
+    $('inLand').value = state.landPct.toFixed(1);
+    var rows = [
+      ['אמדן דירה', nis(d.price)],
+      ['אמדן עלות הקמה', nis(C) + ' · ' + pct(C / d.price * 100)],
+      ['מחיר קרקע — נגבה בשלב הקרקע', nis(landStage) + ' · ' + pct(landStage / d.price * 100)]
+    ];
+    if (d.equity > 0) rows.push(['הון עצמי 20% (מהמחירון)', nis(d.equity)]);
+    if (d.landBal > 0) rows.push(['יתרת השלמה לקרקע אחרי הון עצמי', nis(d.landBal)]);
+    var info = $('aptInfo');
+    info.hidden = false;
+    info.innerHTML = rows.map(function (r) {
+      return '<div class="ai-row"><span>' + r[0] + '</span><span>' + r[1] + '</span></div>';
+    }).join('');
+    renderAll();
+  }
+
+  function clearAptSel() {
+    if (!state.apt) return;
+    state.apt = null;
+    $('aptInfo').hidden = true;
+    $('pickUnit').value = '';
+  }
+  $('inV').addEventListener('input', clearAptSel);
+  $('inLand').addEventListener('input', clearAptSel);
+
+  $('pickBld').addEventListener('change', function () { fillUnits(); clearAptSel(); });
+  $('pickUnit').addEventListener('change', function () {
+    var v = $('pickUnit').value;
+    if (!v) { clearAptSel(); return; }
+    var d = APTS.filter(function (x) { return x.bld + '-' + x.unit === v; })[0];
+    if (d) applyApt(d);
+  });
+
+  function loadPricelist() {
+    fetch(GVIZ + '&_=' + Date.now())
+      .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.text(); })
+      .then(function (t) {
+        var rows = parseCSV(t);
+        var id2col = buildIdCol(rows);
+        var m1 = id2col ? resolveMap(IDB1, id2col) : null;
+        var m2 = id2col ? resolveMap(IDB2, id2col) : null;
+        if (!colsOk(m1)) m1 = B1_FB;
+        if (!colsOk(m2)) m2 = B2_FB;
+        APTS = [];
+        for (var i = 0; i < rows.length; i++) {
+          var a = extractApt(rows[i], m1, 1); if (a) APTS.push(a);
+          var b = extractApt(rows[i], m2, 2); if (b) APTS.push(b);
+        }
+        if (!APTS.length) throw new Error('לא זוהו דירות');
+        fillUnits();
+        $('pickNote').textContent = APTS.length + ' דירות · נתונים חיים מהמחירון';
+      })
+      .catch(function (e) {
+        $('pickNote').textContent = 'המחירון לא נטען — הזנה ידנית';
+        $('pickBld').disabled = true;
+        $('pickUnit').disabled = true;
+      });
+  }
+  loadPricelist();
 
   renderAll();
 })();
