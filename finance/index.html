@@ -377,12 +377,13 @@
     </button>
     <button class="track-btn" id="btnB" aria-pressed="false">
       <span class="t-name">גרייס מלא</span>
-      <span class="t-tag" id="tagB">25% הון עצמי · הכול במסירה</span>
+      <span class="t-tag" id="tagB">25% הון מהסך הכולל · הכול במסירה</span>
     </button>
   </nav>
 
   <div class="eqbar" role="group" aria-label="הון עצמי במסלול הנבחר">
     <span class="eq-lbl">הון עצמי במסלול זה:</span>
+    <span class="eq-lbl" id="eqHint" style="font-weight:400;"></span>
     <button class="chip eq-chip" data-eqv="20">20%</button>
     <button class="chip eq-chip" data-eqv="25">25%</button>
     <button class="chip eq-chip" data-eqv="30">30%</button>
@@ -558,10 +559,23 @@
     };
   }
 
+  /* במסלול הגרייס ההון העצמי נגזר מהסך הכולל (אמדן + ריבית) —
+     והריבית תלויה בהון; נפתר בנקודת-שבת: eq = eqB% × (V + I(eq)) */
+  function computeGraceFixed(eqPct, extra) {
+    var eq = state.V * eqPct / 100, t;
+    for (var i = 0; i < 25; i++) {
+      t = computeTrack(true, eq, extra);
+      var ne = (state.V + t.totalInt) * eqPct / 100;
+      if (Math.abs(ne - eq) < 1) { eq = ne; break; }
+      eq = ne;
+    }
+    return computeTrack(true, eq, extra);
+  }
+
   function computeAll() {
     return {
       A: computeTrack(false, state.V * state.eqA / 100, state.extra),
-      B: computeTrack(true, state.V * state.eqB / 100, state.extra)
+      B: computeGraceFixed(state.eqB, state.extra)
     };
   }
 
@@ -606,11 +620,11 @@
           ' בחודש ומסתיימת בכ־' + nis(res.A.peak / 3) + ' בחודש, עד המפתח.'
       },
       B: {
-        name: 'גרייס מלא (' + pct(state.eqB, 0) + ' הון עצמי)',
+        name: 'גרייס מלא (' + pct(state.eqB, 0) + ' הון מהסך הכולל)',
         payLabel: 'תשלומים בתקופת הבנייה',
         mNote: 'נצברת ליתרה ומשולמת במסירה',
-        key: 'משלמים ' + pct(state.eqB, 0) + ' בהצטרפות — ולא עוד שקל עד המפתח. גם הריבית משולמת רק בסוף: ' +
-          'היא נצברת ליתרה, מסתכמת בכ־' + nisShort(res.B.totalInt) + ', והכול נסגר במסירה מול המשכנתא.'
+        key: 'משלמים הון עצמי של ' + nisShort(res.B.eq) + ' — ' + pct(state.eqB, 0) + ' מהסך הכולל (אמדן + ריבית) — בהצטרפות, ולא עוד שקל עד המפתח. ' +
+          'גם הריבית משולמת רק בסוף: היא נצברת ליתרה, מסתכמת בכ־' + nisShort(res.B.totalInt) + ', והכול נסגר במסירה מול המשכנתא.'
       }
     };
   }
@@ -623,7 +637,9 @@
 
     var cashLand = t.eq + t.extra;
     $('tCash').textContent = nis(cashLand);
-    $('tCashSub').textContent = pct(cashLand / t.V * 100) + ' מהאמדן, עד ' + mmyy(state.landDate);
+    $('tCashSub').textContent = state.track === 'B'
+      ? pct(state.eqB, 0) + ' מהסך הכולל (אמדן+ריבית), עד ' + mmyy(state.landDate)
+      : pct(cashLand / t.V * 100) + ' מהאמדן, עד ' + mmyy(state.landDate);
 
     $('tPayLabel').textContent = meta.payLabel;
     if (state.track === 'A') {
@@ -657,7 +673,7 @@
 
   function renderTable(res) {
     var cols = ['A', 'B'];
-    var names = { A: 'ריבית שוטפת · ' + pct(state.eqA, 0), B: 'גרייס מלא · ' + pct(state.eqB, 0) };
+    var names = { A: 'ריבית שוטפת · ' + pct(state.eqA, 0), B: 'גרייס מלא · ' + pct(state.eqB, 0) + ' מהסך' };
     var head = '<thead><tr><th></th>' + cols.map(function (c) {
       return '<th class="' + (state.track === c ? 'sel' : '') + '">' + names[c] + '</th>';
     }).join('') + '</tr></thead>';
@@ -668,8 +684,9 @@
         }).join('') + '</tr>';
     }
     var body = '<tbody>' +
-      row('מזומן עד שלב הקרקע', function (t) {
-        return nis(t.eq + t.extra) + '<br><span style="color:var(--ink-3);font-size:11.5px">' + pct((t.eq + t.extra) / t.V * 100) + '</span>';
+      row('מזומן עד שלב הקרקע', function (t, c) {
+        var sub = c === 'B' ? pct(state.eqB, 0) + ' מהסך הכולל' : pct((t.eq + t.extra) / t.V * 100) + ' מהאמדן';
+        return nis(t.eq + t.extra) + '<br><span style="color:var(--ink-3);font-size:11.5px">' + sub + '</span>';
       }) +
       row('תשלומים בזמן הבנייה', function (t, c) {
         return c === 'A' ? nis(t.totalInt) + '<br><span style="color:var(--ink-3);font-size:11.5px">' +
@@ -700,7 +717,8 @@
       'מסלול: ' + m.name,
       'ריבית: פריים ' + pct(state.prime, 2) + ' + ' + pct(state.margin, 2) + ' (משתנה)',
       '',
-      '· מזומן עד שלב הקרקע (' + mmyy(state.landDate) + '): ' + nis(cash) + ' (' + pct(cash / t.V * 100) + ')',
+      '· מזומן עד שלב הקרקע (' + mmyy(state.landDate) + '): ' + nis(cash) + ' (' +
+        (state.track === 'B' ? pct(state.eqB, 0) + ' מהסך הכולל' : pct(cash / t.V * 100) + ' מהאמדן') + ')',
       state.track === 'A'
         ? '· ריבית שוטפת עד המסירה: ' + nis(t.totalInt) + ' (כ־' + nis(t.firstPay / 3) + ' עד ' + nis(t.peak / 3) + ' בחודש, ממוצע ' + nis(totalM > 0 ? t.totalInt / totalM : 0) + ')'
         : '· תשלומים בתקופת הבנייה: 0 ₪ — הריבית נצברת ומשולמת במסירה (ממוצע ' + nis(totalM > 0 ? t.totalInt / totalM : 0) + ' לחודש)',
@@ -720,7 +738,8 @@
     renderMonthly(res);
     renderTable(res);
     $('tagA').textContent = pct(state.eqA, 0) + ' הון עצמי · משלמים בדרך';
-    $('tagB').textContent = pct(state.eqB, 0) + ' הון עצמי · הכול במסירה';
+    $('tagB').textContent = pct(state.eqB, 0) + ' הון מהסך הכולל · הכול במסירה';
+    $('eqHint').textContent = state.track === 'B' ? '(אחוז מהסך הכולל: אמדן + ריבית)' : '(אחוז מהאמדן)';
     var eq = state.track === 'A' ? state.eqA : state.eqB;
     if (document.activeElement !== $('eqIn')) $('eqIn').value = eq;
     document.querySelectorAll('.eq-chip').forEach(function (ch) {
