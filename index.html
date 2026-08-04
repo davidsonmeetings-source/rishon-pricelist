@@ -326,11 +326,11 @@ function priceBlock(d){
 }
 function financeRows(d){
   var g=graceCalc(d);
+  var eq20=d.equity>0?d.equity:Math.round(d.price*0.2);
   return '<div style="border-top:1px dashed var(--line2);margin-top:5px;padding-top:5px;">'
-    +dr("גרייס מלא — סך הכול לתשלום",nis(g.total))
-    +dr("מזה ריבית נצברת עד המסירה",nis(g.interest))
-    +dr("הון עצמי 25% מהסך הכולל",nis(g.eq))
-    +dr("אמדן — מסלול ריבית שוטפת",nis(d.price))
+    +dr("הון עצמי במסלול גרייס מלא (25% מהסך)",nis(g.eq))
+    +dr("ריבית נצברת במסלול גרייס מלא",nis(g.interest))
+    +dr("הון עצמי במסלול ריבית שוטפת (20%)",nis(eq20))
     +'</div>';
 }
 
@@ -361,7 +361,7 @@ function pickUnit(id){
     +'<div style="text-align:left;white-space:nowrap;">'+priceBlock(d).replace('class="price"','class="price" style="font-size:16px;"')
     +'<span class="pill '+(d.status||"none")+'" style="margin-top:3px;">'+lb+'</span></div></div>'
     +'<div class="det" style="margin-top:8px;border-radius:8px;border-top:none;background:#f3f3f1;">'
-    +dr("הון עצמי 20%",nis(d.equity))+dr('שכ"ט עו"ד 1.1%',nis(d.law1))
+    +dr('שכ"ט עו"ד 1.1%',nis(d.law1))
     +dr('שכ"ט עו"ד תשלום ראשון 0.35%',nis(d.law2))
     +dr("מס רכישה — דירה יחידה", d.taxS?nis(d.taxS):"פטור")
     +dr("מס רכישה — להשקעה",nis(d.taxI))+landRows(d)+financeRows(d)+'</div>';
@@ -430,7 +430,7 @@ function renderList(){
     var det='';
     if(open[id]){
       det='<div class="det">'+dr("מרפסת",d.bal+' מ"ר')+dr("חניות",d.pk)
-        +dr("הון עצמי 20%",nis(d.equity))+dr('שכ"ט עו"ד 1.1%',nis(d.law1))
+        +dr('שכ"ט עו"ד 1.1%',nis(d.law1))
         +dr('שכ"ט עו"ד תשלום ראשון 0.35%',nis(d.law2))
         +dr("מס רכישה — דירה יחידה", d.taxS?nis(d.taxS):"פטור")
         +dr("מס רכישה — להשקעה",nis(d.taxI))+landRows(d)+financeRows(d)+'</div>';
