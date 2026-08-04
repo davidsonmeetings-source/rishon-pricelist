@@ -819,15 +819,19 @@
   $('btnPrint').addEventListener('click', function () { window.print(); });
 
   /* ---------- pricelist integration ----------
-     Same live Google Sheet + parsing as the agents pricelist (incl. the
-     "מזהה לקלוד" ID row and the two-buildings-side-by-side layout). */
-  var SHEET_ID = '1sDH0j-gkiaqojtznY_FnIq8SHj0lzPAQVsRcBNuOM44';
-  var GID = '815985993';
-  var GVIZ = 'https://docs.google.com/spreadsheets/d/' + SHEET_ID + '/gviz/tq?tqx=out:csv&gid=' + GID;
+     הגיליון החדש (04.08.2026): טאב לכל בניין; מיפוי לפי שורת "מזהה לקלוד" +
+     רזולוציית כותרות לשדות עם מזהה עשרוני (הפורמט מעוות אותם ב-CSV). */
+  var SHEET_ID = '1RBxcEXbuWlaP35MGpv4D8Qr5e3Y5QI2BeSGMScjo-Dc';
+  var SHEET_B = 'בוטיק 9 קומות';
+  var SHEET_T = 'מגדל 20 קומות';
+  function gvizUrl(name) {
+    return 'https://docs.google.com/spreadsheets/d/' + SHEET_ID + '/gviz/tq?tqx=out:csv&sheet=' + encodeURIComponent(name);
+  }
   var IDB1 = { floor: 1, unit: 2, rooms: 5, size: 6, price: 9, equity: 10, buildCost: '14.01', landPrice: '14.1', landBal: '14.3', status: 15 };
   var IDB2 = { floor: 101, unit: 103, rooms: 106, size: 107, price: 110, equity: 111, buildCost: '115.01', landPrice: '115.1', landBal: '115.3', status: 116 };
-  var B1_FB = { floor: 1, unit: 2, rooms: 5, size: 6, price: 9, equity: 10, buildCost: 15, landPrice: 16, landBal: 18, status: 19 };
-  var B2_FB = { floor: 25, unit: 27, rooms: 30, size: 31, price: 34, equity: 35, buildCost: 40, landPrice: 41, landBal: 43, status: 44 };
+  var B1_FB = { floor: 1, unit: 2, rooms: 5, size: 6, price: 9, equity: 10, buildCost: 15, landPrice: 16, landBal: 18, status: 21 };
+  var B2_FB = { floor: 1, unit: 3, rooms: 6, size: 7, price: 10, equity: 11, buildCost: 16, landPrice: 17, landBal: 19, status: 22 };
+  var HDR_MATCH = { buildCost: { eq: 'אמדן עלות הקמה' }, landPrice: { eq: 'עלות קרקע' }, landBal: { has: 'השלמת קרקע' } };
   var APTS = [];
 
   function parseCSV(text) {
@@ -864,6 +868,27 @@
   }
   function resolveMap(idMap, id2col) { var m = {}; for (var k in idMap) { var c = id2col[idMap[k]]; m[k] = (c == null ? null : c); } return m; }
   function colsOk(m) { return m && m.unit != null && m.price != null; }
+  function buildHeaderMap(rows) {
+    for (var i = 0; i < Math.min(rows.length, 8); i++) {
+      var hasPrice = false, hasStatusH = false;
+      for (var j = 0; j < rows[i].length; j++) {
+        var v = cellAt(rows[i], j);
+        if (v === 'אמדן') hasPrice = true;
+        if (v === 'סטטוס') hasStatusH = true;
+      }
+      if (hasPrice && hasStatusH) {
+        var hm = {};
+        for (var k in HDR_MATCH) {
+          for (var j2 = 0; j2 < rows[i].length; j2++) {
+            var h = cellAt(rows[i], j2);
+            if (HDR_MATCH[k].eq ? h === HDR_MATCH[k].eq : (h && h.indexOf(HDR_MATCH[k].has) >= 0)) { hm[k] = j2; break; }
+          }
+        }
+        return hm;
+      }
+    }
+    return {};
+  }
   function extractApt(r, M, b) {
     var unit = cellAt(r, M.unit), price = sheetNum(cellAt(r, M.price));
     if (!/^\d+$/.test(unit) || price < 100000) return null;
@@ -874,6 +899,20 @@
       buildCost: sheetNum(cellAt(r, M.buildCost)), landPrice: sheetNum(cellAt(r, M.landPrice)),
       landBal: sheetNum(cellAt(r, M.landBal)), status: statusKey(cellAt(r, M.status))
     };
+  }
+  function parseTab(text, idMap, fbMap, bldNum) {
+    var rows = parseCSV(text), out = [];
+    var id2col = buildIdCol(rows);
+    var m = id2col ? resolveMap(idMap, id2col) : null;
+    if (!colsOk(m)) m = {};
+    for (var k in fbMap) { if (m[k] == null) m[k] = fbMap[k]; }
+    var hm = buildHeaderMap(rows);
+    for (var k2 in hm) { m[k2] = hm[k2]; }
+    for (var i = 0; i < rows.length; i++) {
+      var a = extractApt(rows[i], m, bldNum);
+      if (a) out.push(a);
+    }
+    return out;
   }
 
   function fillUnits() {
@@ -930,20 +969,13 @@
   });
 
   function loadPricelist() {
-    fetch(GVIZ + '&_=' + Date.now())
-      .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.text(); })
-      .then(function (t) {
-        var rows = parseCSV(t);
-        var id2col = buildIdCol(rows);
-        var m1 = id2col ? resolveMap(IDB1, id2col) : null;
-        var m2 = id2col ? resolveMap(IDB2, id2col) : null;
-        if (!colsOk(m1)) m1 = B1_FB;
-        if (!colsOk(m2)) m2 = B2_FB;
-        APTS = [];
-        for (var i = 0; i < rows.length; i++) {
-          var a = extractApt(rows[i], m1, 1); if (a) APTS.push(a);
-          var b = extractApt(rows[i], m2, 2); if (b) APTS.push(b);
-        }
+    var bust = '&_=' + Date.now();
+    Promise.all([
+      fetch(gvizUrl(SHEET_B) + bust).then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.text(); }),
+      fetch(gvizUrl(SHEET_T) + bust).then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.text(); })
+    ])
+      .then(function (texts) {
+        APTS = parseTab(texts[0], IDB1, B1_FB, 1).concat(parseTab(texts[1], IDB2, B2_FB, 2));
         if (!APTS.length) throw new Error('לא זוהו דירות');
         fillUnits();
         $('pickNote').textContent = APTS.length + ' דירות · נתונים חיים מהמחירון';
