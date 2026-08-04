@@ -181,28 +181,34 @@
 
 <script>
 /* ============ הגדרות — ערוך כאן בלבד ============ */
-var SHEET_ID = "1sDH0j-gkiaqojtznY_FnIq8SHj0lzPAQVsRcBNuOM44";
-var GID      = "815985993";
+/* הגיליון החדש (04.08.2026): טאב לכל בניין. השמות חייבים להתאים לשמות הטאבים בגיליון! */
+var SHEET_ID = "1RBxcEXbuWlaP35MGpv4D8Qr5e3Y5QI2BeSGMScjo-Dc";
+var SHEET_B  = "בוטיק 9 קומות";
+var SHEET_T  = "מגדל 20 קומות";
 var BUILDING1_NAME = "בוטיק 9 קומות";
 var BUILDING2_NAME = "מגדל 20 ק'";
-/* מסלול גרייס מלא: ריבית נצברת רבעונית (המודל המאומת מהמחשבון), הון עצמי 25% מהסך הכולל */
+/* גרייס מלא: נקרא מעמודות הגיליון (מזהים 14.4/14.5); החישוב המקומי משמש כגיבוי בלבד */
 var FIN = { prime: 4.5, margin: 1.0, eqPct: 25, m2c: 5, cm: 36 };
 
-/* מיפוי לפי שורת "מזהה לקלוד" בגיליון — לכל עמודה ID יציב, כך ששינוי/הוספת עמודות לא שובר.
-   בניין 1: IDs 1..15  |  מגדל: IDs 101..116.  ערכי סטטוס: פנוי / שמור / תפוס */
+/* מיפוי לפי שורת "מזהה לקלוד" בכל טאב — לכל עמודה ID יציב, כך ששינוי/הוספת עמודות לא שובר.
+   בוטיק: IDs 1..19 + 14.x  |  מגדל: IDs 101..119 + 115.x.  ערכי סטטוס: פנוי / שמור / נמכר */
 var ID_ROW_LABEL = "מזהה";
 var IDB1 = {floor:1, unit:2, type:3, dir:4, rooms:5, size:6, bal:7, pk:8,
             price:9, equity:10, law1:11, law2:12, taxS:13, taxI:14,
-            buildCost:"14.01", landPrice:"14.1", landPct:"14.2", landBal:"14.3", status:15};
+            buildCost:"14.01", landPrice:"14.1", landPct:"14.2", landBal:"14.3",
+            graceT:"14.4", graceE:"14.5", status:15};
 var IDB2 = {floor:101, ftype:102, unit:103, type:104, dir:105, rooms:106, size:107, bal:108, pk:109,
             price:110, equity:111, law1:112, law2:113, taxS:114, taxI:115,
-            buildCost:"115.01", landPrice:"115.1", landPct:"115.2", landBal:"115.3", status:116};
-/* גיבוי לפי מיקום קבוע, אם שורת המזהה חסרה */
-var B1_FB = {floor:1, unit:2, type:3, dir:4, rooms:5, size:6, bal:7, pk:8, price:9, equity:10, law1:11, law2:12, taxS:13, taxI:14, buildCost:15, landPrice:16, landPct:17, landBal:18, status:19};
-var B2_FB = {floor:25, ftype:26, unit:27, type:28, dir:29, rooms:30, size:31, bal:32, pk:33, price:34, equity:35, law1:36, law2:37, taxS:38, taxI:39, buildCost:40, landPrice:41, landPct:42, landBal:43, status:44};
+            buildCost:"115.01", landPrice:"115.1", landPct:"115.2", landBal:"115.3",
+            graceT:"115.4", graceE:"115.5", status:116};
+/* גיבוי לפי מיקום קבוע בפריסת הטאבים החדשה (עמודה A = תווית), אם שורת המזהה חסרה */
+var B1_FB = {floor:1, unit:2, type:3, dir:4, rooms:5, size:6, bal:7, pk:8, price:9, equity:10, law1:11, law2:12, taxS:13, taxI:14, buildCost:15, landPrice:16, landPct:17, landBal:18, graceT:19, graceE:20, status:21};
+var B2_FB = {floor:1, ftype:2, unit:3, type:4, dir:5, rooms:6, size:7, bal:8, pk:9, price:10, equity:11, law1:12, law2:13, taxS:14, taxI:15, buildCost:16, landPrice:17, landPct:18, landBal:19, graceT:20, graceE:21, status:22};
 /* ================================================ */
 
-var GVIZ = "https://docs.google.com/spreadsheets/d/"+SHEET_ID+"/gviz/tq?tqx=out:csv&gid="+GID;
+function gvizUrl(sheetName){
+  return "https://docs.google.com/spreadsheets/d/"+SHEET_ID+"/gviz/tq?tqx=out:csv&sheet="+encodeURIComponent(sheetName);
+}
 var DATA = [], hasStatus=false;
 var view="plan", planB=1, selId=null;
 var listB="all", filter="all", open={};
@@ -242,6 +248,7 @@ function extract(r, M, bldNum){
     law2:toNum(cell(r,M.law2)), taxS:toNum(cell(r,M.taxS)), taxI:toNum(cell(r,M.taxI)),
     buildCost:toNum(cell(r,M.buildCost)),
     landPrice:toNum(cell(r,M.landPrice)), landPct:toPct(cell(r,M.landPct)), landBal:toNum(cell(r,M.landBal)),
+    graceTv:toNum(cell(r,M.graceT)), graceEv:toNum(cell(r,M.graceE)),
     cap: ft.indexOf("קפסולה")>=0,
     status: M.status!=null ? statusKey(cell(r,M.status)) : null
   };
@@ -261,18 +268,48 @@ function resolveMap(idMap, id2col){
   var m={}; for(var k in idMap){ var c=id2col[idMap[k]]; m[k]=(c==null?null:c); } return m;
 }
 function colsOk(m){ return m && m.unit!=null && m.price!=null; }
-function parseSheet(text){
-  var rows=parseCSV(text), out=[];
-  hasStatus=false;
-  var id2col=buildIdCol(rows);
-  var m1=id2col?resolveMap(IDB1,id2col):null;
-  var m2=id2col?resolveMap(IDB2,id2col):null;
-  if(!colsOk(m1)) m1=B1_FB;
-  if(!colsOk(m2)) m2=B2_FB;
-  for(var i=0;i<rows.length;i++){
-    var a=extract(rows[i],m1,1); if(a){ out.push(a); if(a.status) hasStatus=true; }
-    var b=extract(rows[i],m2,2); if(b){ out.push(b); if(b.status) hasStatus=true; }
+/* רזולוציה לפי כותרות — המזהים העשרוניים (14.1 וכו') מעוותים ע"י פורמט העמודה ב-CSV,
+   ולכן השדות האלה נפתרים לפי טקסט הכותרת (ייחודי בכל טאב) */
+var HDR_MATCH = {
+  buildCost:{eq:"אמדן עלות הקמה"}, landPrice:{eq:"עלות קרקע"}, landPct:{has:"קרקע באחוזים"},
+  landBal:{has:"השלמת קרקע"}, graceT:{has:"אמדן כולל ריבית"}, graceE:{has:"הון עצמי 25%"}
+};
+function buildHeaderMap(rows){
+  for(var i=0;i<Math.min(rows.length,8);i++){
+    var hasPrice=false, hasStatusH=false;
+    for(var j=0;j<rows[i].length;j++){
+      var v=cell(rows[i],j);
+      if(v==="אמדן") hasPrice=true;
+      if(v==="סטטוס") hasStatusH=true;
+    }
+    if(hasPrice && hasStatusH){
+      var hm={};
+      for(var k in HDR_MATCH){
+        for(var j2=0;j2<rows[i].length;j2++){
+          var h=cell(rows[i],j2);
+          if(HDR_MATCH[k].eq ? h===HDR_MATCH[k].eq : (h && h.indexOf(HDR_MATCH[k].has)>=0)){ hm[k]=j2; break; }
+        }
+      }
+      return hm;
+    }
   }
+  return {};
+}
+function parseSheetOne(text, idMap, fbMap, bldNum){
+  var rows=parseCSV(text), out=[];
+  var id2col=buildIdCol(rows);
+  var m=id2col?resolveMap(idMap,id2col):null;
+  if(!colsOk(m)) m={};
+  for(var k in fbMap){ if(m[k]==null) m[k]=fbMap[k]; }
+  var hm=buildHeaderMap(rows);
+  for(var k2 in hm){ m[k2]=hm[k2]; }
+  for(var i=0;i<rows.length;i++){
+    var a=extract(rows[i],m,bldNum);
+    if(a){ out.push(a); if(a.status) hasStatus=true; }
+  }
+  return out;
+}
+function applyCapsules(out){
   var capFloors={};
   out.forEach(function(d){ if(d.cap) capFloors[d.bld+"-"+d.floor]=true; });
   out.forEach(function(d){ if(capFloors[d.bld+"-"+d.floor]) d.cap=true; });
@@ -305,6 +342,11 @@ function graceIntWithEq(price, C, landStage, eq){
   return tot;
 }
 function graceCalc(d){
+  /* עדיפות לערכים החיים מהגיליון (עמודות 14.4/14.5); חישוב מקומי רק אם חסרים */
+  if(d.graceTv>0 && d.graceTv>d.price){
+    var eqS=(d.graceEv>0)?d.graceEv:Math.round(d.graceTv*FIN.eqPct/100);
+    return { total:Math.round(d.graceTv), interest:Math.round(d.graceTv-d.price), eq:eqS };
+  }
   var P=d.price;
   var C=(d.buildCost>0 && d.buildCost<P)?d.buildCost:Math.round(P*0.433);
   var landStage=P-C;
@@ -481,18 +523,22 @@ document.getElementById("refreshBtn").addEventListener("click",load);
 /* ---------- טעינה ---------- */
 function load(){
   document.getElementById("updated").textContent="טוען נתונים…";
-  fetch(GVIZ+"&_="+(new Date().getTime()))
-    .then(function(r){ if(!r.ok) throw new Error("HTTP "+r.status); return r.text(); })
-    .then(function(t){
-      DATA=parseSheet(t);
+  var bust="&_="+(new Date().getTime());
+  hasStatus=false;
+  Promise.all([
+    fetch(gvizUrl(SHEET_B)+bust).then(function(r){ if(!r.ok) throw new Error("HTTP "+r.status+" (בוטיק)"); return r.text(); }),
+    fetch(gvizUrl(SHEET_T)+bust).then(function(r){ if(!r.ok) throw new Error("HTTP "+r.status+" (מגדל)"); return r.text(); })
+  ])
+    .then(function(texts){
+      DATA=applyCapsules(parseSheetOne(texts[0],IDB1,B1_FB,1).concat(parseSheetOne(texts[1],IDB2,B2_FB,2)));
       if(!DATA.length) throw new Error("לא זוהו שורות דירה");
       SIZES=DATA.map(function(d){return d.size;}).filter(function(v,i,a){return a.indexOf(v)===i;}).sort(function(a,b){return a-b;});
       buildSizeScale();
       var now=new Date();
       document.getElementById("updated").textContent="עודכן "+now.toLocaleTimeString("he-IL",{hour:"2-digit",minute:"2-digit"})+" · "+DATA.length+" דירות";
       document.getElementById("banner").innerHTML = hasStatus ? "" :
-        '<div class="banner">להצגת פנוי/שמור/נמכר — מלאו את עמודת הסטטוס בגיליון (בניין 1: עמודה P · מגדל: עמודה AF).</div>';
-      document.getElementById("foot").innerHTML='נתונים חיים מתוך הגיליון של דנה וחופית · צפייה בלבד<br>מסלול "גרייס מלא" מחושב לפי המודל שבמחשבון המימון (הדמיה, ריבית פריים משתנה)';
+        '<div class="banner">להצגת פנוי/שמור/נמכר — מלאו את עמודת הסטטוס בטאבי הבניינים בגיליון.</div>';
+      document.getElementById("foot").innerHTML='נתונים חיים מתוך גיליון המחירון · צפייה בלבד<br>מסלול "גרייס מלא" נקרא מעמודות הגיליון (הדמיה, ריבית פריים משתנה)';
       renderActive();
     })
     .catch(function(e){
