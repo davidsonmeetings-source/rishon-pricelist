@@ -118,6 +118,7 @@
     margin-top: 16px;
     overflow: hidden;
   }
+  .card[hidden] { display: none; }
   .card > .card-head {
     padding: 13px 18px 11px;
     border-bottom: 1px solid var(--hairline);
@@ -425,7 +426,7 @@
     <span id="keylineText"></span>
   </div>
 
-  <section class="card" aria-labelledby="mTitle">
+  <section class="card" aria-labelledby="mTitle" id="mCard">
     <div class="card-head">
       <span class="card-title" id="mTitle">ריבית לחודש, לאורך התקופה</span>
       <span class="card-note" id="mNote"></span>
@@ -643,6 +644,8 @@
   }
 
   function renderMonthly(res) {
+    $('mCard').hidden = state.track !== 'A';
+    if (state.track !== 'A') return;
     var t = res[state.track];
     var meta = trackMeta(res)[state.track];
     var totalM = state.m2c + state.cm;
