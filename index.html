@@ -60,6 +60,7 @@
   .meta{font-size:12px; color:var(--tx2);}
   .price{font-size:15px; font-weight:600; text-align:left; white-space:nowrap;}
   .price-cap{font-size:10px; color:var(--info); text-align:left; white-space:nowrap;}
+  .price-base{font-size:11px; color:var(--tx2); text-align:left; white-space:nowrap;}
   .pill{display:inline-block; margin-top:2px; font-size:11px; padding:2px 9px; border-radius:7px;}
   .pill.avail{background:var(--avail-bg); color:var(--avail);}
   .pill.hold{background:var(--hold-bg); color:var(--hold);}
@@ -116,11 +117,7 @@
     <button data-v="list">רשימה</button>
   </div>
 
-  <div class="seg" id="priceSeg">
-    <button data-pm="base" class="on">אמדן</button>
-    <button data-pm="grace">אמדן + גרייס מלא · 25% הון</button>
-  </div>
-  <div class="grace-note hide" id="graceNote">המחיר כולל ריבית שנצברת עד המסירה (גרייס מלא, 25% הון עצמי, פריים 4.5%+1%) · הדמיה בלבד</div>
+  <div class="grace-note">בכל דירה: השורה העליונה — גרייס מלא, 25% הון עצמי מהסך הכולל · מתחתיה — האמדן · הדמיה, ריבית פריים משתנה</div>
 
   <!-- ============ תצוגת תרשים ============ -->
   <div id="planView">
@@ -188,7 +185,7 @@ var SHEET_ID = "1sDH0j-gkiaqojtznY_FnIq8SHj0lzPAQVsRcBNuOM44";
 var GID      = "815985993";
 var BUILDING1_NAME = "בוטיק 9 קומות";
 var BUILDING2_NAME = "מגדל 20 ק'";
-/* חלופת גרייס מלא: ריבית נצברת רבעונית (המודל המאומת מהמחשבון), הון עצמי 25% */
+/* מסלול גרייס מלא: ריבית נצברת רבעונית (המודל המאומת מהמחשבון), הון עצמי 25% מהסך הכולל */
 var FIN = { prime: 4.5, margin: 1.0, eqPct: 25, m2c: 5, cm: 36 };
 
 /* מיפוי לפי שורת "מזהה לקלוד" בגיליון — לכל עמודה ID יציב, כך ששינוי/הוספת עמודות לא שובר.
@@ -207,7 +204,7 @@ var B2_FB = {floor:25, ftype:26, unit:27, type:28, dir:29, rooms:30, size:31, ba
 
 var GVIZ = "https://docs.google.com/spreadsheets/d/"+SHEET_ID+"/gviz/tq?tqx=out:csv&gid="+GID;
 var DATA = [], hasStatus=false;
-var view="plan", planB=1, selId=null, priceMode="base";
+var view="plan", planB=1, selId=null;
 var listB="all", filter="all", open={};
 
 /* ---------- פירוק הגיליון ---------- */
@@ -289,12 +286,10 @@ function clr(status){
   return {bg:"var(--"+k+"-bg)", bd:"var(--"+k+"-bd)", tx:"var(--"+(status||"none")+(status?"":"-tx")+")"};
 }
 
-/* ---------- חלופת גרייס מלא: ריבית נצברת רבעונית, 25% הון עצמי ---------- */
-function graceInt(d){
-  var price=d.price;
-  var C=(d.buildCost>0 && d.buildCost<price)?d.buildCost:Math.round(price*0.433);
-  var landStage=price-C;
-  var eq=price*FIN.eqPct/100;
+/* ---------- מסלול גרייס מלא: ריבית נצברת רבעונית ----------
+   ההון העצמי (25%) נגזר מהסך הכולל (אמדן + ריבית), והריבית תלויה
+   בהון העצמי (הלוואת הקרקע) — נפתר בנקודת-שבת: eq = 25% × (P + I(eq)) */
+function graceIntWithEq(price, C, landStage, eq){
   var landLoan=Math.max(0,landStage-eq);
   var left=Math.max(0,eq-landStage);
   var q=(FIN.prime+FIN.margin)/100/4;
@@ -307,23 +302,35 @@ function graceInt(d){
     var off=Math.min(left,draws); draws-=off; left-=off;
     var it=(bal+draws)*q; tot+=it; bal+=draws+it;
   }
-  return Math.round(tot);
+  return tot;
 }
-function gracePrice(d){ return d.price+graceInt(d); }
-function priceBlock(d){
-  if(priceMode=="grace"){
-    return '<div class="price">'+nis(gracePrice(d))+'</div>'
-      +'<div class="price-cap">כולל גרייס · בסיס '+nis(d.price)+'</div>';
+function graceCalc(d){
+  var P=d.price;
+  var C=(d.buildCost>0 && d.buildCost<P)?d.buildCost:Math.round(P*0.433);
+  var landStage=P-C;
+  var eq=P*FIN.eqPct/100, I=0;
+  for(var it=0; it<25; it++){
+    I=graceIntWithEq(P,C,landStage,eq);
+    var newEq=(P+I)*FIN.eqPct/100;
+    if(Math.abs(newEq-eq)<1){ eq=newEq; break; }
+    eq=newEq;
   }
-  return '<div class="price">'+nis(d.price)+'</div>';
+  I=graceIntWithEq(P,C,landStage,eq);
+  return { total:Math.round(P+I), interest:Math.round(I), eq:Math.round(eq) };
+}
+function priceBlock(d){
+  var g=graceCalc(d);
+  return '<div class="price-cap">גרייס מלא · 25% הון</div>'
+    +'<div class="price">'+nis(g.total)+'</div>'
+    +'<div class="price-base">אמדן: '+nis(d.price)+'</div>';
 }
 function financeRows(d){
-  var gi=graceInt(d);
+  var g=graceCalc(d);
   return '<div style="border-top:1px dashed var(--line2);margin-top:5px;padding-top:5px;">'
-    +dr("אמדן — ריבית שוטפת (20% הון)",nis(d.price))
-    +dr("אמדן + גרייס מלא (25% הון)",nis(d.price+gi))
-    +dr("מזה ריבית נצברת עד המסירה",nis(gi))
-    +dr("הון עצמי 25%",nis(Math.round(d.price*FIN.eqPct/100)))
+    +dr("גרייס מלא — סך הכול לתשלום",nis(g.total))
+    +dr("מזה ריבית נצברת עד המסירה",nis(g.interest))
+    +dr("הון עצמי 25% מהסך הכולל",nis(g.eq))
+    +dr("אמדן — מסלול ריבית שוטפת",nis(d.price))
     +'</div>';
 }
 
@@ -464,12 +471,6 @@ bindSeg("viewSeg",function(b){
   document.getElementById("listView").className = view=="list"?"":"hide";
   renderActive();
 });
-bindSeg("priceSeg",function(b){
-  priceMode=b.getAttribute("data-pm");
-  document.getElementById("graceNote").className = priceMode=="grace" ? "grace-note" : "grace-note hide";
-  renderActive();
-  if(view=="plan" && selId) pickUnit(selId);
-});
 bindSeg("planBldSeg",function(b){ planB=+b.getAttribute("data-b"); selId=null; document.getElementById("sel").className="sel hide"; renderPlan(); });
 bindSeg("listBldSeg",function(b){ listB=b.getAttribute("data-b"); renderList(); });
 bindSeg("statSeg",function(b){ filter=b.getAttribute("data-st"); renderList(); });
@@ -491,7 +492,7 @@ function load(){
       document.getElementById("updated").textContent="עודכן "+now.toLocaleTimeString("he-IL",{hour:"2-digit",minute:"2-digit"})+" · "+DATA.length+" דירות";
       document.getElementById("banner").innerHTML = hasStatus ? "" :
         '<div class="banner">להצגת פנוי/שמור/נמכר — מלאו את עמודת הסטטוס בגיליון (בניין 1: עמודה P · מגדל: עמודה AF).</div>';
-      document.getElementById("foot").innerHTML='נתונים חיים מתוך הגיליון של דנה וחופית · צפייה בלבד<br>חלופת "גרייס מלא" מחושבת לפי המודל שבמחשבון המימון (הדמיה, ריבית פריים משתנה)';
+      document.getElementById("foot").innerHTML='נתונים חיים מתוך הגיליון של דנה וחופית · צפייה בלבד<br>מסלול "גרייס מלא" מחושב לפי המודל שבמחשבון המימון (הדמיה, ריבית פריים משתנה)';
       renderActive();
     })
     .catch(function(e){
