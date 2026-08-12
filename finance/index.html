@@ -149,6 +149,8 @@
     padding: 8px 10px; direction: ltr; text-align: right; width: 100%;
   }
   .field input:focus-visible { outline: 2px solid var(--stage-2); outline-offset: 1px; }
+  .field input[readonly] { background: var(--paper-2, rgba(0,0,0,.03)); color: var(--ink-2); cursor: not-allowed; }
+  .field .lock-note { font-size: 11.5px; color: var(--ink-3); line-height: 1.35; }
   .chips { display: flex; flex-wrap: wrap; gap: 6px; padding: 2px 18px 14px; }
   .chips .lbl { font-size: 12px; color: var(--ink-3); align-self: center; margin-inline-end: 2px; }
   .chip {
@@ -335,6 +337,7 @@
       <div class="field">
         <label for="inLand">רכיב קרקע מהאמדן (%)</label>
         <input id="inLand" type="number" min="30" max="75" step="0.1" value="56.7">
+        <span class="lock-note" id="landNote"></span>
       </div>
       <div class="field">
         <label for="inLandDate">מועד תשלום הקרקע</label>
@@ -491,8 +494,13 @@
     m2c: 5,
     cm: 36,
     track: 'A',
-    apt: null
+    apt: null,
+    /* עלות ההקמה של הדירה הנבחרת, בשקלים — עוגן קבוע.
+       כשהאמדן משתנה, ההקמה לא זזה וכל ההפרש נופל על רכיב הקרקע (כמו בגיליון). */
+    buildCost: null,
+    aptData: null
   };
+  var DEFAULT_LAND_PCT = 56.7;
 
   /* ---------- utils ---------- */
   function nis(n) { return Math.round(n).toLocaleString('he-IL') + ' ₪'; }
@@ -747,12 +755,32 @@
     });
   }
 
+  /* ---------- עוגן עלות ההקמה ----------
+     עלות ההקמה היא נתון קבוע של הדירה (₪/מ״ר בנייה) — היא לא משתנה כשהאמדן משתנה.
+     לכן כל שינוי באמדן נופל כולו על רכיב הקרקע, ואחוז הקרקע נגזר מחדש.
+     זו בדיוק ההתנהגות של גיליון המחירון. */
+  function syncLandFromBuild() {
+    if (!(state.buildCost > 0) || !(state.V > 0)) return false;
+    var p = (state.V - state.buildCost) / state.V * 100;
+    state.landPct = Math.max(0, Math.min(95, p));
+    if (document.activeElement !== $('inLand')) $('inLand').value = state.landPct.toFixed(1);
+    return true;
+  }
+  function setBuildLock(on) {
+    var el = $('inLand');
+    el.readOnly = !!on;
+    $('landNote').textContent = on
+      ? 'נגזר מעלות ההקמה הקבועה של הדירה (' + nis(state.buildCost) + '). שינוי האמדן נופל כולו על רכיב הקרקע.'
+      : '';
+  }
+
   /* ---------- wiring ---------- */
   function bindMoney(id, key) {
     var el = $(id);
     el.addEventListener('input', function () {
       var v = parseNum(el.value);
       state[key] = v;
+      if (key === 'V') { syncLandFromBuild(); renderAptInfo(); }
       renderAll();
     });
     el.addEventListener('blur', function () {
@@ -775,6 +803,8 @@
 
   document.querySelectorAll('.chip[data-v]').forEach(function (ch) {
     ch.addEventListener('click', function () {
+      /* אמדן מהיר = תרחיש חופשי — משחרר את עוגן ההקמה של הדירה שנבחרה */
+      resetApt();
       state.V = parseInt(ch.dataset.v, 10);
       $('inV').value = state.V.toLocaleString('en-US');
       renderAll();
@@ -889,17 +919,6 @@
     }
     return {};
   }
-  function extractApt(r, M, b) {
-    var unit = cellAt(r, M.unit), price = sheetNum(cellAt(r, M.price));
-    if (!/^\d+$/.test(unit) || price < 100000) return null;
-    return {
-      bld: b, floor: sheetNum(cellAt(r, M.floor)), unit: parseInt(unit, 10),
-      rooms: sheetNum(cellAt(r, M.rooms)), size: sheetNum(cellAt(r, M.size)),
-      price: price, equity: sheetNum(cellAt(r, M.equity)),
-      buildCost: sheetNum(cellAt(r, M.buildCost)), landPrice: sheetNum(cellAt(r, M.landPrice)),
-      landBal: sheetNum(cellAt(r, M.landBal)), status: statusKey(cellAt(r, M.status))
-    };
-  }
   function parseTab(text, idMap, fbMap, bldNum) {
     var rows = parseCSV(text), out = [];
     var id2col = buildIdCol(rows);
@@ -913,6 +932,17 @@
       if (a) out.push(a);
     }
     return out;
+  }
+  function extractApt(r, M, b) {
+    var unit = cellAt(r, M.unit), price = sheetNum(cellAt(r, M.price));
+    if (!/^\d+$/.test(unit) || price < 100000) return null;
+    return {
+      bld: b, floor: sheetNum(cellAt(r, M.floor)), unit: parseInt(unit, 10),
+      rooms: sheetNum(cellAt(r, M.rooms)), size: sheetNum(cellAt(r, M.size)),
+      price: price, equity: sheetNum(cellAt(r, M.equity)),
+      buildCost: sheetNum(cellAt(r, M.buildCost)), landPrice: sheetNum(cellAt(r, M.landPrice)),
+      landBal: sheetNum(cellAt(r, M.landBal)), status: statusKey(cellAt(r, M.status))
+    };
   }
 
   function fillUnits() {
@@ -930,40 +960,60 @@
 
   function applyApt(d) {
     state.V = d.price;
-    var C = (d.buildCost > 0 && d.buildCost < d.price) ? d.buildCost : Math.round(d.price * 0.433);
-    var landStage = d.price - C;
-    state.landPct = landStage / d.price * 100;
+    /* עלות ההקמה מהמחירון היא העוגן; רכיב הקרקע הוא השארית */
+    state.buildCost = (d.buildCost > 0 && d.buildCost < d.price) ? d.buildCost : Math.round(d.price * 0.433);
+    state.aptData = d;
     state.apt = 'דירה ' + d.unit + ' · ' + (d.bld === 1 ? 'בוטיק 9 ק׳' : 'מגדל 20 ק׳') + ' · ק.' + d.floor + ' · ' + d.rooms + ' חד׳ · ' + d.size + ' מ״ר';
     $('inV').value = d.price.toLocaleString('en-US');
-    $('inLand').value = state.landPct.toFixed(1);
+    syncLandFromBuild();
+    setBuildLock(true);
+    renderAptInfo();
+    renderAll();
+  }
+
+  /* פירוט הדירה נגזר מהמצב הנוכחי — כדי שיישאר נכון גם אחרי עדכון ידני של האמדן */
+  function renderAptInfo() {
+    var info = $('aptInfo'), d = state.aptData, C = state.buildCost;
+    if (!d || !(C > 0)) { info.hidden = true; return; }
+    var V = state.V, landStage = Math.max(0, V - C);
+    var edited = Math.round(V) !== Math.round(d.price);
+    var eq20 = edited ? Math.round(V * 0.2) : (d.equity > 0 ? d.equity : Math.round(V * 0.2));
     var rows = [
-      ['אמדן דירה', nis(d.price)],
-      ['אמדן עלות הקמה', nis(C) + ' · ' + pct(C / d.price * 100)],
-      ['מחיר קרקע — נגבה בשלב הקרקע', nis(landStage) + ' · ' + pct(landStage / d.price * 100)]
+      ['אמדן דירה', nis(V) + (edited ? ' · עודכן ידנית (מחירון: ' + nis(d.price) + ')' : '')],
+      ['אמדן עלות הקמה — קבוע', nis(C) + ' · ' + pct(V > 0 ? C / V * 100 : 0)],
+      ['מחיר קרקע — נגבה בשלב הקרקע', nis(landStage) + ' · ' + pct(V > 0 ? landStage / V * 100 : 0)],
+      ['הון עצמי 20%' + (edited ? '' : ' (מהמחירון)'), nis(eq20)]
     ];
-    if (d.equity > 0) rows.push(['הון עצמי 20% (מהמחירון)', nis(d.equity)]);
-    if (d.landBal > 0) rows.push(['יתרת השלמה לקרקע אחרי הון עצמי', nis(d.landBal)]);
-    var info = $('aptInfo');
+    var bal = edited ? Math.max(0, landStage - eq20) : (d.landBal > 0 ? d.landBal : Math.max(0, landStage - eq20));
+    rows.push(['יתרת השלמה לקרקע אחרי הון עצמי', nis(bal)]);
     info.hidden = false;
     info.innerHTML = rows.map(function (r) {
       return '<div class="ai-row"><span>' + r[0] + '</span><span>' + r[1] + '</span></div>';
     }).join('');
-    renderAll();
   }
 
-  function clearAptSel() {
-    if (!state.apt) return;
-    state.apt = null;
+  /* שחרור מלא של הדירה — חוזרים לתרחיש חופשי (אחוז קרקע נערך ידנית) */
+  function resetApt() {
+    if (!state.apt && !(state.buildCost > 0)) return;
+    state.apt = null; state.aptData = null; state.buildCost = null;
+    state.landPct = DEFAULT_LAND_PCT;
+    $('inLand').value = DEFAULT_LAND_PCT.toFixed(1);
+    setBuildLock(false);
     $('aptInfo').hidden = true;
     $('pickUnit').value = '';
   }
-  $('inV').addEventListener('input', clearAptSel);
-  $('inLand').addEventListener('input', clearAptSel);
 
-  $('pickBld').addEventListener('change', function () { fillUnits(); clearAptSel(); });
+  /* עדכון ידני של האמדן מנתק את התווית מהמחירון, אבל שומר את עוגן ההקמה */
+  function clearAptSel() {
+    if (!state.apt) return;
+    state.apt = null;
+  }
+  $('inV').addEventListener('input', clearAptSel);
+
+  $('pickBld').addEventListener('change', function () { fillUnits(); resetApt(); renderAll(); });
   $('pickUnit').addEventListener('change', function () {
     var v = $('pickUnit').value;
-    if (!v) { clearAptSel(); return; }
+    if (!v) { resetApt(); renderAll(); return; }
     var d = APTS.filter(function (x) { return x.bld + '-' + x.unit === v; })[0];
     if (d) applyApt(d);
   });
