@@ -939,7 +939,7 @@ function jrSendSign(id){
   var d=window.jrLastData, sm=document.getElementById("jr_signmsg");
   if(!d||!sm) return;
   var ph=jrGet("jr_signphone").replace(/[^0-9]/g,"");
-  if(!/^05d{8}$/.test(ph)){ sm.style.color="#c5221f"; sm.textContent="מספר הטלפון בטופס אינו תקין (צריך 05XXXXXXXX)"; return; }
+  if(!/^05[0-9]{8}$/.test(ph)){ sm.style.color="#c5221f"; sm.textContent="מספר הטלפון בטופס אינו תקין (צריך 05XXXXXXXX)"; return; }
   var btn=document.getElementById("jr_sendsign"); btn.disabled=true;
   sm.style.color=""; sm.textContent="שולח קישור חתימה…";
   var tok="bk-"+Date.now().toString(36)+Math.random().toString(36).slice(2,7);
