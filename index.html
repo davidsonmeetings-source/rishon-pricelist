@@ -624,6 +624,10 @@ var DocxFill = (function(){
 var JR_TEMPLATE_URL = "assets/bakasha-template.docx";
 var jrTpl = null;   // התבנית נטענת פעם אחת ונשמרת בזיכרון הדף
 
+/* שם הבניין במסמך ובלוג — קצר בלבד, בלי מספר הקומות.
+   שונה מ-BUILDING1_NAME/BUILDING2_NAME ששולטים בתצוגה בדף עצמו. */
+var JR_BLD = { 1: "בוטיק", 2: "מגדל" };
+
 /* ---------- רישום לגוגל שיטס (דרך Google Form) ----------
    אין שרת, ולכן אין דרך לכתוב לגיליון עם אימות. Google Form היא נקודת קצה
    ציבורית שלא דורשת הרשאות, והתשובות זורמות אוטומטית לגיליון מקושר.
@@ -633,6 +637,13 @@ var JR_LOG_URL   = "https://docs.google.com/forms/d/e/1FAIpQLSfL5H2RPOfVGNFcSSgm
 var JR_LOG_ENTRY = "entry.1757391795";   // שדה יחיד שמקבל שורה מופרדת בטאבים
 /* הגיליון המקושר: 1wV4mACqxp3wbj-bU40Q8cT67BcrlzDHXsnFDjVUnY0Y
    אפשר לשנות את שם השאלה בטופס בחופשיות — מזהה ה-entry לא משתנה. */
+
+/* סדר העמודות בשורה הנרשמת. אם משנים כאן — לעדכן גם את שורת הכותרות בגיליון.
+   מסומן ★ = שדה שנספח א1 דורש בהזנה ידנית ולא ניתן לשלוף מהמחירון. */
+var JR_LOG_COLS = ["בניין","מס' יחידה","קומה","דגם","כיוון","מס' חדרים","שטח","מרפסת","חניות",
+  "אמדן","הון עצמי","מסלול ★","תאריך החתימה ★",
+  "שם רוכש א' ★","ת.ז. רוכש א' ★","שם רוכש ב' ★","ת.ז. רוכש ב' ★",
+  "כתובת","טלפון","דוא\"ל","מנהל מכירות","טלפון מנהל","שם הקובץ"];
 
 function jrLog(row){
   if(!JR_LOG_URL || !JR_LOG_ENTRY) return;
@@ -717,8 +728,9 @@ function jrSubmit(id){
   msg.className="jr-msg"; msg.textContent="יוצר מסמך…";
 
   var eq20=d.equity>0?d.equity:Math.round(d.price*0.2);
-  var eq = jrGet("jr_eqmode")==="grace" ? graceCalc(d).eq : eq20;
-  var bn = d.bld==1?BUILDING1_NAME:BUILDING2_NAME;
+  var isGrace = jrGet("jr_eqmode")==="grace";
+  var eq = isGrace ? graceCalc(d).eq : eq20;
+  var bn = JR_BLD[d.bld];
 
   var data={
     date:jrToday(), bldg:bn, floor:d.floor, unit:d.unit, model:d.type, dir:d.dir,
@@ -742,11 +754,14 @@ function jrSubmit(id){
       setTimeout(function(){ URL.revokeObjectURL(url); },10000);
       msg.className="jr-msg ok";
       msg.innerHTML="✅ המסמך ירד למכשיר:<br>"+jrEsc(name);
-      /* אחרי שהמסמך ירד בהצלחה — רישום. בלי ת.ז. ובלי דוא"ל: הם במסמך עצמו,
-         והלוג נועד לעקוב אילו בקשות הופקו, לא לשכפל את פרטי הרוכש. */
-      jrLog([ bn, d.unit, d.floor, d.rooms, d.size,
-              d.price, eq, (jrGet("jr_eqmode")==="grace" ? "גרייס מלא 25%" : "20% מהאמדן"),
-              data.b1name, data.b2name, data.phone, data.agent, name ]);
+      /* אחרי שהמסמך ירד בהצלחה — רישום מלא של הבקשה.
+         הסדר תואם ל-JR_LOG_COLS, וכולל את כל מה שנספח א1 דורש בהזנה ידנית
+         (שמות החותמים, ת.ז., תאריך החתימה והמסלול) כדי שניתן יהיה להפיק אותו מכאן. */
+      jrLog([ bn, d.unit, d.floor, d.type, d.dir, d.rooms, d.size, d.bal, d.pk,
+              d.price, eq, (isGrace ? "גרייס מלא 25%" : "20% מהאמדן"), data.date,
+              data.b1name, data.b1id, data.b2name, data.b2id,
+              data.address, data.phone, data.email,
+              data.agent, data.agentPhone, name ]);
     })
     .catch(function(e){ msg.className="jr-msg err"; msg.textContent="שגיאה: "+e.message; });
 }
