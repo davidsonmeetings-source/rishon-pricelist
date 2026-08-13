@@ -91,6 +91,30 @@
   .refresh{display:block; margin:14px auto 0; padding:7px 16px; font-size:13px; font-family:inherit;
     background:#fff; border:1px solid var(--line); border-radius:9px; color:var(--tx); cursor:pointer;}
   .hide{display:none;}
+
+  /* ---- בקשת הצטרפות ---- */
+  .jr-open{width:100%; padding:8px 12px; font-family:inherit; font-size:13px; font-weight:600;
+    background:var(--info-bg); color:var(--info); border:1px solid #a9cdf0; border-radius:9px; cursor:pointer;}
+  .jr-open:active{transform:translateY(1px);}
+  .jr-ov{position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:50;
+    display:flex; align-items:flex-start; justify-content:center; padding:16px; overflow:auto;}
+  .jr-box{background:var(--card); border-radius:14px; padding:14px; width:100%; max-width:460px;
+    margin:auto; box-shadow:0 10px 40px rgba(0,0,0,.25);}
+  .jr-head{display:flex; justify-content:space-between; align-items:center; font-size:16px; margin-bottom:8px;}
+  .jr-x{background:none; border:none; font-size:17px; cursor:pointer; color:var(--tx3); font-family:inherit;}
+  .jr-apt{background:var(--bg); border-radius:9px; padding:8px 10px; font-size:12px;
+    color:var(--tx2); line-height:1.6; margin-bottom:10px;}
+  .jr-grid{display:grid; grid-template-columns:1fr 1fr; gap:8px;}
+  .jr-f{display:flex; flex-direction:column; gap:3px; font-size:11px; color:var(--tx2);}
+  .jr-f input, .jr-f select{font-family:inherit; font-size:14px; padding:7px 9px; color:var(--tx);
+    border:1px solid var(--line2); border-radius:8px; background:#fff; width:100%; box-sizing:border-box;}
+  .jr-wide{margin-top:8px;}
+  .jr-actions{margin-top:12px;}
+  .jr-go{width:100%; padding:11px; font-family:inherit; font-size:15px; font-weight:600; color:#fff;
+    background:var(--info); border:none; border-radius:10px; cursor:pointer;}
+  .jr-msg{margin-top:9px; font-size:12.5px; line-height:1.6; text-align:center; color:var(--tx2);}
+  .jr-msg.ok{color:#1d7a52;} .jr-msg.err{color:var(--sold);}
+  @media (max-width:420px){ .jr-grid{grid-template-columns:1fr;} }
 </style>
 </head>
 <body>
@@ -406,7 +430,7 @@ function pickUnit(id){
     +dr('שכ"ט עו"ד 1.1%',nis(d.law1))
     +dr('שכ"ט עו"ד תשלום ראשון 0.35%',nis(d.law2))
     +dr("מס רכישה — דירה יחידה", d.taxS?nis(d.taxS):"פטור")
-    +dr("מס רכישה — להשקעה",nis(d.taxI))+landRows(d)+financeRows(d)+'</div>';
+    +dr("מס רכישה — להשקעה",nis(d.taxI))+landRows(d)+financeRows(d)+jrBtn(d)+'</div>';
   renderPlan();
   document.getElementById("sel").scrollIntoView({behavior:"smooth",block:"nearest"});
 }
@@ -475,7 +499,7 @@ function renderList(){
         +dr('שכ"ט עו"ד 1.1%',nis(d.law1))
         +dr('שכ"ט עו"ד תשלום ראשון 0.35%',nis(d.law2))
         +dr("מס רכישה — דירה יחידה", d.taxS?nis(d.taxS):"פטור")
-        +dr("מס רכישה — להשקעה",nis(d.taxI))+landRows(d)+financeRows(d)+'</div>';
+        +dr("מס רכישה — להשקעה",nis(d.taxI))+landRows(d)+financeRows(d)+jrBtn(d)+'</div>';
     }
     return '<div class="row '+stk+'">'+head+det+'</div>';
   }).join("");
@@ -496,6 +520,234 @@ function landRows(d){
   return h;
 }
 function togRow(id){ open[id]=!open[id]; renderList(); }
+
+/* ============ מנוע DOCX — בונה מסמך Word בדפדפן, בלי ספריות ============
+   התבנית היא ZIP לא דחוס (method 0), ולכן צריך רק CRC32 וכתיבת כותרות ZIP —
+   בלי inflate, בלי JSZip, בלי CompressionStream. עובד בכל דפדפן. */
+var DocxFill = (function(){
+  var CRC = (function(){ var t=new Uint32Array(256);
+    for(var n=0;n<256;n++){ var c=n; for(var k=0;k<8;k++) c=(c&1)?(0xEDB88320^(c>>>1)):(c>>>1); t[n]=c>>>0; }
+    return t; })();
+  function crc32(b){ var c=0xFFFFFFFF; for(var i=0;i<b.length;i++) c=CRC[(c^b[i])&0xFF]^(c>>>8); return (c^0xFFFFFFFF)>>>0; }
+
+  /* הליכה סדרתית על כותרות מקומיות — תקף כי התבנית נבנתה כ-stored בלי data descriptors */
+  function readZip(buf){
+    var dv=new DataView(buf.buffer,buf.byteOffset,buf.byteLength), e=[], off=0;
+    while(off+4<=buf.length && dv.getUint32(off,true)===0x04034b50){
+      var method=dv.getUint16(off+8,true), csize=dv.getUint32(off+18,true);
+      var nl=dv.getUint16(off+26,true), xl=dv.getUint16(off+28,true), ds=off+30+nl+xl;
+      if(method!==0) throw new Error("התבנית חייבת להיות ZIP לא דחוס (נמצאה שיטה "+method+")");
+      e.push({name:new TextDecoder("utf-8").decode(buf.subarray(off+30,off+30+nl)), data:buf.subarray(ds,ds+csize)});
+      off=ds+csize;
+    }
+    if(!e.length) throw new Error("התבנית ריקה או פגומה");
+    return e;
+  }
+  function writeZip(entries){
+    var enc=new TextEncoder(), parts=[], central=[], offset=0;
+    entries.forEach(function(e){
+      var nb=enc.encode(e.name), crc=crc32(e.data), size=e.data.length;
+      var lh=new Uint8Array(30+nb.length), lv=new DataView(lh.buffer);
+      lv.setUint32(0,0x04034b50,true); lv.setUint16(4,20,true); lv.setUint16(6,0x0800,true);
+      lv.setUint16(8,0,true); lv.setUint16(12,0x21,true);
+      lv.setUint32(14,crc,true); lv.setUint32(18,size,true); lv.setUint32(22,size,true);
+      lv.setUint16(26,nb.length,true); lh.set(nb,30);
+      var cd=new Uint8Array(46+nb.length), cv=new DataView(cd.buffer);
+      cv.setUint32(0,0x02014b50,true); cv.setUint16(4,20,true); cv.setUint16(6,20,true);
+      cv.setUint16(8,0x0800,true); cv.setUint16(10,0,true); cv.setUint16(14,0x21,true);
+      cv.setUint32(16,crc,true); cv.setUint32(20,size,true); cv.setUint32(24,size,true);
+      cv.setUint16(28,nb.length,true); cv.setUint32(42,offset,true); cd.set(nb,46);
+      parts.push(lh,e.data); central.push(cd); offset+=lh.length+size;
+    });
+    var cdSize=central.reduce(function(a,c){return a+c.length;},0);
+    var eo=new Uint8Array(22), ev=new DataView(eo.buffer);
+    ev.setUint32(0,0x06054b50,true); ev.setUint16(8,entries.length,true); ev.setUint16(10,entries.length,true);
+    ev.setUint32(12,cdSize,true); ev.setUint32(16,offset,true);
+    var out=new Uint8Array(offset+cdSize+22), p=0;
+    parts.forEach(function(b){ out.set(b,p); p+=b.length; });
+    central.forEach(function(b){ out.set(b,p); p+=b.length; });
+    out.set(eo,p); return out;
+  }
+
+  function esc(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+  function run(t){ return '<w:r><w:rPr><w:rtl/></w:rPr><w:t xml:space="preserve">'+esc(t)+'</w:t></w:r>'; }
+  function fillCell(tc,t){ var i=tc.lastIndexOf("</w:p>"); return i<0?tc:tc.slice(0,i)+run(t)+tc.slice(i); }
+
+  /* מיפוי לפי אינדקס תא. (0,1,9) מסומן "כיוון:" בטופס העדכני ולא ממולא — אין שדה מחסן. */
+  function cellMap(d){ return [
+    [0,0,1,d.bldg],[0,0,3,d.floor],[0,0,5,d.unit],[0,0,7,d.model],[0,0,9,d.dir],
+    [0,1,1,d.rooms],[0,1,3,d.area],[0,1,5,d.balcony],[0,1,7,d.parking],
+    [1,0,1,d.estimate],[1,0,3,d.equity],
+    [2,0,1,d.b1name],[2,0,2,d.b2name],[2,1,1,d.b1id],[2,1,2,d.b2id],
+    [2,2,1,d.address],[2,3,1,d.phone],[2,4,1,d.email]]; }
+
+  function patch(xml,d){
+    var bs=xml.indexOf("<w:body>"), be=xml.lastIndexOf("</w:body>");
+    if(bs<0||be<0) throw new Error("לא נמצא גוף המסמך בתבנית");
+    var body=xml.slice(bs,be), re=/<w:tbl>[\s\S]*?<\/w:tbl>/g, tbls=[], m;
+    while((m=re.exec(body))) tbls.push({start:m.index,end:m.index+m[0].length,text:m[0]});
+    if(tbls.length<3) throw new Error("התבנית מכילה "+tbls.length+" טבלאות במקום 3");
+    var by={}; cellMap(d).forEach(function(x){ (by[x[0]]=by[x[0]]||[]).push([x[1],x[2],x[3]]); });
+    for(var ti=tbls.length-1;ti>=0;ti--){
+      if(!by[ti]) continue;
+      var t=tbls[ti].text, rows=t.match(/<w:tr\b[\s\S]*?<\/w:tr>/g)||[], nr=rows.slice();
+      by[ti].forEach(function(rc){
+        var r=rc[0], c=rc[1], v=rc[2];
+        if(v===""||v==null||!nr[r]) return;
+        var cells=nr[r].match(/<w:tc>[\s\S]*?<\/w:tc>/g)||[];
+        if(!cells[c]) return;
+        var filled=fillCell(cells[c],v), seen=0;
+        nr[r]=nr[r].replace(/<w:tc>[\s\S]*?<\/w:tc>/g,function(mm){ return (seen++===c)?filled:mm; });
+      });
+      rows.forEach(function(o,i){ t=t.replace(o,nr[i]); });
+      body=body.slice(0,tbls[ti].start)+t+body.slice(tbls[ti].end);
+    }
+    if(d.date)       body=body.replace(/(<w:t[^>]*>)תאריך:_+(<\/w:t>)/,'$1תאריך: '+esc(d.date)+'$2');
+    if(d.agent)      body=body.replace(/מנהל המכירות: _+/,'מנהל המכירות: '+esc(d.agent)+' ');
+    if(d.agentPhone) body=body.replace(/טלפון נייד: _+/,'טלפון נייד: '+esc(d.agentPhone));
+    return xml.slice(0,bs)+body+xml.slice(be);
+  }
+
+  return { fill:function(tplBytes,d){
+    var entries=readZip(tplBytes);
+    var doc=entries.filter(function(e){ return e.name==="word/document.xml"; })[0];
+    if(!doc) throw new Error("לא נמצא word/document.xml בתבנית");
+    doc.data=new TextEncoder().encode(patch(new TextDecoder("utf-8").decode(doc.data),d));
+    return writeZip(entries);
+  }};
+})();
+
+/* ================= בקשת הצטרפות — יצירת DOCX בדפדפן =================
+   הדף טוען את תבנית ה-DOCX פעם אחת, מזריק את הערכים ומוריד קובץ חדש.
+   אין שרת, אין Drive, אין הרשאות — ולכן גם אין עותק מרכזי:
+   הקובץ נשמר רק במכשיר של מי שיצר אותו. */
+var JR_TEMPLATE_URL = "assets/bakasha-template.docx";
+var jrTpl = null;   // התבנית נטענת פעם אחת ונשמרת בזיכרון הדף
+
+/* ---------- רישום לגוגל שיטס (דרך Google Form) ----------
+   אין שרת, ולכן אין דרך לכתוב לגיליון עם אימות. Google Form היא נקודת קצה
+   ציבורית שלא דורשת הרשאות, והתשובות זורמות אוטומטית לגיליון מקושר.
+   הרישום הוא "שגר ושכח": הוא לעולם לא מעכב ולא שובר את יצירת המסמך.
+   ריק = הרישום כבוי בשקט. */
+var JR_LOG_URL   = "";   // .../formResponse
+var JR_LOG_ENTRY = "";   // entry.XXXXXXXXX — שדה יחיד שמקבל שורה מופרדת בטאבים
+
+function jrLog(row){
+  if(!JR_LOG_URL || !JR_LOG_ENTRY) return;
+  try{
+    var body = new URLSearchParams();
+    body.append(JR_LOG_ENTRY, row.join("\t"));
+    /* no-cors + urlencoded = בקשה פשוטה בלי preflight. התשובה אטומה ולא נבדקת — במכוון. */
+    fetch(JR_LOG_URL, { method:"POST", mode:"no-cors", body:body });
+  }catch(e){ /* רישום שנכשל לא ישבש את הפקת המסמך */ }
+}
+
+function jrBtn(d){
+  if(d.status==="sold") return '';
+  return '<div style="border-top:1px dashed var(--line2);margin-top:7px;padding-top:7px;">'
+    +'<button class="jr-open" onclick="jrOpen(\''+d.bld+'-'+d.unit+'\')">🧾 צור בקשת הצטרפות</button></div>';
+}
+
+function jrEsc(s){ return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/"/g,"&quot;"); }
+function jrGet(id){ var el=document.getElementById(id); return el?el.value.trim():""; }
+function jrRemember(k,v){ try{ localStorage.setItem(k,v); }catch(e){} }
+function jrRecall(k){ try{ return localStorage.getItem(k)||""; }catch(e){ return ""; } }
+
+function jrOpen(id){
+  var d=DATA.filter(function(x){return x.bld+"-"+x.unit===id;})[0];
+  if(!d) return;
+  var bn=d.bld==1?BUILDING1_NAME:BUILDING2_NAME;
+  var eq20=d.equity>0?d.equity:Math.round(d.price*0.2);
+  var g=graceCalc(d);
+  var f=function(lbl,fid,ph,val){
+    return '<label class="jr-f"><span>'+lbl+'</span><input id="'+fid+'" placeholder="'+jrEsc(ph||"")+'" value="'+jrEsc(val||"")+'"></label>';
+  };
+  var html='<div class="jr-box" onclick="event.stopPropagation()">'
+    +'<div class="jr-head"><b>בקשת הצטרפות</b><button class="jr-x" onclick="jrClose()">✕</button></div>'
+    +'<div class="jr-apt">'+bn+' · דירה '+d.unit+' · קומה '+d.floor+' · '+d.rooms+' חד\' · '+d.size+' מ"ר · טיפוס '+d.type+' · '+d.dir+'<br>'
+    +'אמדן: '+nis(d.price)+'</div>'
+    +'<div class="jr-grid">'
+    +f("שם רוכש א'","jr_b1name")+f("ת.ז. רוכש א'","jr_b1id")
+    +f("שם רוכש ב'","jr_b2name","אם יש")+f("ת.ז. רוכש ב'","jr_b2id","אם יש")
+    +f("כתובת","jr_address")+f("טלפון","jr_phone")
+    +f('דוא"ל',"jr_email")
+    +f("מנהל מכירות","jr_agent","",jrRecall("jr_agent"))
+    +f("טלפון מנהל","jr_agentPhone","",jrRecall("jr_agentPhone"))
+    +'</div>'
+    +'<label class="jr-f jr-wide"><span>הון עצמי בטופס</span><select id="jr_eqmode">'
+    +'<option value="std">20% מהאמדן — '+nis(eq20)+'</option>'
+    +'<option value="grace">גרייס מלא 25% — '+nis(g.eq)+'</option></select></label>'
+    +'<div class="jr-actions"><button class="jr-go" onclick="jrSubmit(\''+id+'\')">צור מסמך</button></div>'
+    +'<div class="jr-msg" id="jr_msg"></div></div>';
+  var ov=document.createElement("div");
+  ov.className="jr-ov"; ov.id="jr_ov"; ov.innerHTML=html;
+  ov.onclick=jrClose;
+  document.body.appendChild(ov);
+  var first=document.getElementById("jr_b1name"); if(first) first.focus();
+}
+function jrClose(){ var ov=document.getElementById("jr_ov"); if(ov) ov.parentNode.removeChild(ov); }
+
+/* טוען את התבנית פעם אחת ומחזיק אותה בזיכרון הדף */
+function jrLoadTemplate(){
+  if(jrTpl) return Promise.resolve(jrTpl);
+  return fetch(JR_TEMPLATE_URL,{cache:"force-cache"})
+    .then(function(r){
+      if(!r.ok) throw new Error("התבנית לא נמצאה ("+r.status+"). ודא ש-"+JR_TEMPLATE_URL+" קיים באתר.");
+      return r.arrayBuffer();
+    })
+    .then(function(ab){ jrTpl=new Uint8Array(ab); return jrTpl; });
+}
+
+function jrToday(){
+  var d=new Date(), p=function(n){ return (n<10?"0":"")+n; };
+  return p(d.getDate())+"."+p(d.getMonth()+1)+"."+d.getFullYear();
+}
+/* בתוך המסמך הסכום נכתב בכתיב עברי — "2,900,000 ₪" ולא "₪2,900,000" כמו בדף */
+function jrMoney(n){ return n ? Math.round(n).toLocaleString("en-US")+" ₪" : ""; }
+
+function jrSubmit(id){
+  var d=DATA.filter(function(x){return x.bld+"-"+x.unit===id;})[0];
+  var msg=document.getElementById("jr_msg");
+  if(!d||!msg) return;
+  if(!jrGet("jr_b1name")){ msg.className="jr-msg err"; msg.textContent="חובה למלא שם רוכש א'."; return; }
+
+  jrRemember("jr_agent",jrGet("jr_agent")); jrRemember("jr_agentPhone",jrGet("jr_agentPhone"));
+  msg.className="jr-msg"; msg.textContent="יוצר מסמך…";
+
+  var eq20=d.equity>0?d.equity:Math.round(d.price*0.2);
+  var eq = jrGet("jr_eqmode")==="grace" ? graceCalc(d).eq : eq20;
+  var bn = d.bld==1?BUILDING1_NAME:BUILDING2_NAME;
+
+  var data={
+    date:jrToday(), bldg:bn, floor:d.floor, unit:d.unit, model:d.type, dir:d.dir,
+    rooms:d.rooms, area:d.size?d.size+' מ"ר':"", balcony:d.bal?d.bal+' מ"ר':"", parking:d.pk,
+    estimate:jrMoney(d.price), equity:jrMoney(eq),
+    b1name:jrGet("jr_b1name"), b1id:jrGet("jr_b1id"),
+    b2name:jrGet("jr_b2name"), b2id:jrGet("jr_b2id"),
+    address:jrGet("jr_address"), phone:jrGet("jr_phone"), email:jrGet("jr_email"),
+    agent:jrGet("jr_agent"), agentPhone:jrGet("jr_agentPhone")
+  };
+  var name=("בקשת הצטרפות - "+bn+" יחידה "+d.unit+" - "+data.b1name).replace(/[\\\/:*?"<>|]/g,"-")+".docx";
+
+  jrLoadTemplate()
+    .then(function(tpl){
+      var bytes=DocxFill.fill(tpl,data);
+      var blob=new Blob([bytes],{type:"application/vnd.openxmlformats-officedocument.wordprocessingml.document"});
+      var url=URL.createObjectURL(blob);
+      var a=document.createElement("a");
+      a.href=url; a.download=name;
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      setTimeout(function(){ URL.revokeObjectURL(url); },10000);
+      msg.className="jr-msg ok";
+      msg.innerHTML="✅ המסמך ירד למכשיר:<br>"+jrEsc(name);
+      /* אחרי שהמסמך ירד בהצלחה — רישום. בלי ת.ז. ובלי דוא"ל: הם במסמך עצמו,
+         והלוג נועד לעקוב אילו בקשות הופקו, לא לשכפל את פרטי הרוכש. */
+      jrLog([ bn, d.unit, d.floor, d.rooms, d.size,
+              d.price, eq, (jrGet("jr_eqmode")==="grace" ? "גרייס מלא 25%" : "20% מהאמדן"),
+              data.b1name, data.b2name, data.phone, data.agent, name ]);
+    })
+    .catch(function(e){ msg.className="jr-msg err"; msg.textContent="שגיאה: "+e.message; });
+}
 
 function renderActive(){ if(view=="plan") renderPlan(); else renderList(); }
 
