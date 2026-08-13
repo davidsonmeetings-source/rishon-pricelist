@@ -629,8 +629,10 @@ var jrTpl = null;   // התבנית נטענת פעם אחת ונשמרת בזי
    ציבורית שלא דורשת הרשאות, והתשובות זורמות אוטומטית לגיליון מקושר.
    הרישום הוא "שגר ושכח": הוא לעולם לא מעכב ולא שובר את יצירת המסמך.
    ריק = הרישום כבוי בשקט. */
-var JR_LOG_URL   = "";   // .../formResponse
-var JR_LOG_ENTRY = "";   // entry.XXXXXXXXX — שדה יחיד שמקבל שורה מופרדת בטאבים
+var JR_LOG_URL   = "https://docs.google.com/forms/d/e/1FAIpQLSfL5H2RPOfVGNFcSSgmd4woXLFwsyzDDOJJix1xPi5cwWhLfw/formResponse";
+var JR_LOG_ENTRY = "entry.1757391795";   // שדה יחיד שמקבל שורה מופרדת בטאבים
+/* הגיליון המקושר: 1wV4mACqxp3wbj-bU40Q8cT67BcrlzDHXsnFDjVUnY0Y
+   אפשר לשנות את שם השאלה בטופס בחופשיות — מזהה ה-entry לא משתנה. */
 
 function jrLog(row){
   if(!JR_LOG_URL || !JR_LOG_ENTRY) return;
