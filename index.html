@@ -765,14 +765,13 @@ function jrSubmit(id){
       msg.className="jr-msg ok";
       msg.innerHTML="✅ המסמך ירד למכשיר:<br>"+jrEsc(name);
       window.jrLastData=data;
-      var phDigits=(data.phone||"").replace(/[^0-9]/g,"");
-      if(phDigits){
-        msg.innerHTML+="<div style='border-top:1px dashed var(--line2);margin-top:8px;padding-top:8px;text-align:right'>"
-          +"<label style='display:flex;gap:6px;align-items:center;font-size:13px;margin-bottom:6px'><input type='checkbox' id='jr_checked'> בדקתי את המסמך שירד ואפשר לשלוח לחתימה</label>"
-          +"<button class='jr-go' id='jr_sendsign' disabled onclick=\"jrSendSign('"+id+"')\">📲 שלח לחתימה בוואטסאפ ("+jrEsc(phDigits)+")</button>"
-          +"<div id='jr_signmsg' style='font-size:13px;margin-top:6px'></div></div>";
-        document.getElementById("jr_checked").onchange=function(){ document.getElementById("jr_sendsign").disabled=!this.checked; };
-      }
+      var phPre=(data.phone||"").replace(/[^0-9]/g,"");
+      msg.innerHTML+="<div style='border-top:1px dashed var(--line2);margin-top:8px;padding-top:8px;text-align:right'>"
+        +"<label style='display:flex;gap:6px;align-items:center;font-size:13px;margin-bottom:6px'><input type='checkbox' id='jr_checked'> בדקתי את המסמך שירד ואפשר לשלוח לחתימה</label>"
+        +"<input id='jr_signphone' inputmode='numeric' placeholder='טלפון הלקוח לוואטסאפ (05XXXXXXXX)' value='"+jrEsc(phPre)+"' style='width:100%;box-sizing:border-box;padding:9px;font-size:14px;border:1px solid #ccc;border-radius:7px;margin-bottom:6px;direction:ltr;text-align:right'>"
+        +"<button class='jr-go' id='jr_sendsign' disabled onclick=&quot;jrSendSign('"+id+"')&quot;>📲 שלח לחתימה בוואטסאפ</button>"
+        +"<div id='jr_signmsg' style='font-size:13px;margin-top:6px'></div></div>";
+      document.getElementById("jr_checked").onchange=function(){ document.getElementById("jr_sendsign").disabled=!this.checked; };
       /* אחרי שהמסמך ירד בהצלחה — רישום מלא של הבקשה.
          הסדר תואם ל-JR_LOG_COLS, וכולל את כל מה שנספח א1 דורש בהזנה ידנית
          (שמות החותמים, ת.ז., תאריך החתימה והמסלול) כדי שניתן יהיה להפיק אותו מכאן. */
@@ -939,7 +938,7 @@ var ESIGN_API="https://hook.eu2.make.com/run82ixythyyvuf9ohw2a3tu1fdw42w4";
 function jrSendSign(id){
   var d=window.jrLastData, sm=document.getElementById("jr_signmsg");
   if(!d||!sm) return;
-  var ph=(d.phone||"").replace(/[^0-9]/g,"");
+  var ph=jrGet("jr_signphone").replace(/[^0-9]/g,"");
   if(!/^05d{8}$/.test(ph)){ sm.style.color="#c5221f"; sm.textContent="מספר הטלפון בטופס אינו תקין (צריך 05XXXXXXXX)"; return; }
   var btn=document.getElementById("jr_sendsign"); btn.disabled=true;
   sm.style.color=""; sm.textContent="שולח קישור חתימה…";
