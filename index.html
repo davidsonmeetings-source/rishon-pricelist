@@ -764,6 +764,15 @@ function jrSubmit(id){
       setTimeout(function(){ URL.revokeObjectURL(url); },10000);
       msg.className="jr-msg ok";
       msg.innerHTML="✅ המסמך ירד למכשיר:<br>"+jrEsc(name);
+      window.jrLastData=data;
+      var phDigits=(data.phone||"").replace(/[^0-9]/g,"");
+      if(phDigits){
+        msg.innerHTML+="<div style='border-top:1px dashed var(--line2);margin-top:8px;padding-top:8px;text-align:right'>"
+          +"<label style='display:flex;gap:6px;align-items:center;font-size:13px;margin-bottom:6px'><input type='checkbox' id='jr_checked'> בדקתי את המסמך שירד ואפשר לשלוח לחתימה</label>"
+          +"<button class='jr-go' id='jr_sendsign' disabled onclick=\"jrSendSign('"+id+"')\">📲 שלח לחתימה בוואטסאפ ("+jrEsc(phDigits)+")</button>"
+          +"<div id='jr_signmsg' style='font-size:13px;margin-top:6px'></div></div>";
+        document.getElementById("jr_checked").onchange=function(){ document.getElementById("jr_sendsign").disabled=!this.checked; };
+      }
       /* אחרי שהמסמך ירד בהצלחה — רישום מלא של הבקשה.
          הסדר תואם ל-JR_LOG_COLS, וכולל את כל מה שנספח א1 דורש בהזנה ידנית
          (שמות החותמים, ת.ז., תאריך החתימה והמסלול) כדי שניתן יהיה להפיק אותו מכאן. */
@@ -922,6 +931,29 @@ function naSubmit(id){
               s1, id1, s2, id2, "", "", "", "", "", name ]);
     })
     .catch(function(e){ msg.className="jr-msg err"; msg.textContent="שגיאה: "+e.message; });
+}
+
+
+/* ---- שליחה לחתימה דיגיטלית בוואטסאפ (אחרי שהמפיק בדק את המסמך) ---- */
+var ESIGN_API="https://hook.eu2.make.com/run82ixythyyvuf9ohw2a3tu1fdw42w4";
+function jrSendSign(id){
+  var d=window.jrLastData, sm=document.getElementById("jr_signmsg");
+  if(!d||!sm) return;
+  var ph=(d.phone||"").replace(/[^0-9]/g,"");
+  if(!/^05d{8}$/.test(ph)){ sm.style.color="#c5221f"; sm.textContent="מספר הטלפון בטופס אינו תקין (צריך 05XXXXXXXX)"; return; }
+  var btn=document.getElementById("jr_sendsign"); btn.disabled=true;
+  sm.style.color=""; sm.textContent="שולח קישור חתימה…";
+  var tok="bk-"+Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+  var body=new URLSearchParams();
+  body.append("action","create"); body.append("token",tok);
+  body.append("building",d.bldg); body.append("unit",d.unit);
+  body.append("payload",JSON.stringify(d));
+  body.append("phone","972"+ph.slice(1));
+  body.append("clientName",d.b1name); body.append("createdBy",d.agent||"");
+  fetch(ESIGN_API,{method:"POST",body:body})
+    .then(function(r){ if(!r.ok) throw 0; return r.json(); })
+    .then(function(){ sm.style.color="#188038"; sm.textContent="✅ קישור החתימה נשלח בוואטסאפ ל-"+ph; })
+    .catch(function(){ sm.style.color="#c5221f"; sm.textContent="השליחה נכשלה — נסו שוב"; btn.disabled=false; });
 }
 
 function renderActive(){ if(view=="plan") renderPlan(); else renderList(); }

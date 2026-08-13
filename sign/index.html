@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>חתימה על בקשת הצטרפות — Forever ראשון לציון</title>
+<style>
+  :root{--blue:#1a73e8;--line:#e3e6ea}
+  body{font-family:Arial,sans-serif;background:#f2f4f7;margin:0;padding:12px;color:#1f2430}
+  .card{max-width:640px;margin:0 auto 14px;background:#fff;border-radius:12px;box-shadow:0 2px 10px rgba(0,0,0,.07);padding:18px}
+  h2{margin:0 0 2px;font-size:20px} .sub{color:#79808c;font-size:13px;margin-bottom:8px}
+  #doc{font-size:13.5px;line-height:1.55;max-height:46vh;overflow-y:auto;border:1px solid var(--line);border-radius:8px;padding:12px;background:#fbfcfe}
+  #doc table{border-collapse:collapse;width:100%;margin:6px 0}
+  #doc td{border:1px solid #ccd2da;padding:4px 6px;font-size:13px}
+  #doc p{margin:6px 0}
+  canvas{border:2px dashed #b9c2cf;border-radius:10px;background:#fff;touch-action:none;width:100%;height:160px;display:block}
+  .row{display:flex;gap:10px;margin-top:10px}
+  button{flex:1;padding:13px;font-size:16px;border:none;border-radius:9px;cursor:pointer;font-weight:bold}
+  #clear{background:#eef1f5;color:#333}
+  #send{background:var(--blue);color:#fff}
+  #send:disabled{background:#a8c6f2}
+  #msg{margin-top:10px;text-align:center;font-size:14px;min-height:20px}
+  .ok{color:#188038}.err{color:#c5221f}
+  #done{display:none;text-align:center}
+  #done .big{font-size:44px}
+  #dl{display:inline-block;margin-top:10px;color:var(--blue);font-weight:bold}
+  #loading{text-align:center;padding:40px;color:#79808c}
+</style>
+</head>
+<body>
+<div class="card" id="loading">טוען את המסמך…</div>
+
+<div id="main" style="display:none">
+  <div class="card">
+    <h2>בקשת הצטרפות — Forever פארק הים</h2>
+    <div class="sub" id="aptline"></div>
+    <div id="doc"></div>
+  </div>
+  <div class="card">
+    <b>חתימה</b>
+    <div class="sub">נא לחתום עם האצבע בתוך המסגרת</div>
+    <canvas id="pad"></canvas>
+    <div class="row">
+      <button id="clear">נקה</button>
+      <button id="send" disabled>✍️ חתום ושלח</button>
+    </div>
+    <div id="msg"></div>
+  </div>
+</div>
+
+<div class="card" id="done">
+  <div class="big">✅</div>
+  <h2>הבקשה נחתמה בהצלחה</h2>
+  <div class="sub">עותק חתום נשלח אליך בוואטסאפ ונקלט אצלנו.</div>
+  <a id="dl" download>⬇️ הורדת עותק למכשיר</a>
+</div>
+
+<script>
+/* ================= הגדרות ================= */
+var API = "https://hook.eu2.make.com/run82ixythyyvuf9ohw2a3tu1fdw42w4";
+var TPL_URL = "../assets/bakasha-template.docx";
+var DOCX_MIME = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+
+/* ================= מנוע DOCX (עותק מדף המחירון — stored zip בלבד) ================= */
+var DocxFill=(function(){
+  var CRC=(function(){ var t=new Uint32Array(256);
+    for(var n=0;n<256;n++){ var c=n; for(var k=0;k<8;k++) c=(c&1)?(0xEDB88320^(c>>>1)):(c>>>1); t[n]=c>>>0; }
+    return t; })();
+  function crc32(b){ var c=0xFFFFFFFF; for(var i=0;i<b.length;i++) c=CRC[(c^b[i])&0xFF]^(c>>>8); return (c^0xFFFFFFFF)>>>0; }
+  function readZip(buf){
+    var dv=new DataView(buf.buffer,buf.byteOffset,buf.byteLength), e=[], off=0;
+    while(off+4<=buf.length && dv.getUint32(off,true)===0x04034b50){
+      var method=dv.getUint16(off+8,true), csize=dv.getUint32(off+18,true);
+      var nl=dv.getUint16(off+26,true), xl=dv.getUint16(off+28,true), ds=off+30+nl+xl;
+      if(method!==0) throw new Error("התבנית חייבת להיות ZIP לא דחוס (נמצאה שיטה "+method+")");
+      e.push({name:new TextDecoder("utf-8").decode(buf.subarray(off+30,off+30+nl)), data:buf.subarray(ds,ds+csize)});
+      off=ds+csize;
+    }
+    if(!e.length) throw new Error("התבנית ריקה או פגומה");
+    return e;
+  }
+  function writeZip(entries){
+    var enc=new TextEncoder(), parts=[], central=[], offset=0;
+    entries.forEach(function(e){
+      var nb=enc.encode(e.name), crc=crc32(e.data), size=e.data.length;
+      var lh=new Uint8Array(30+nb.length), lv=new DataView(lh.buffer);
+      lv.setUint32(0,0x04034b50,true); lv.setUint16(4,20,true); lv.setUint16(6,0x0800,true);
+      lv.setUint16(8,0,true); lv.setUint16(12,0x21,true);
+      lv.setUint32(14,crc,true); lv.setUint32(18,size,true); lv.setUint32(22,size,true);
+      lv.setUint16(26,nb.length,true); lh.set(nb,30);
+      var cd=new Uint8Array(46+nb.length), cv=new DataView(cd.buffer);
+      cv.setUint32(0,0x02014b50,true); cv.setUint16(4,20,true); cv.setUint16(6,20,true);
+      cv.setUint16(8,0x0800,true); cv.setUint16(10,0,true); cv.setUint16(14,0x21,true);
+      cv.setUint32(16,crc,true); cv.setUint32(20,size,true); cv.setUint32(24,size,true);
+      cv.setUint16(28,nb.length,true); cv.setUint32(42,offset,true); cd.set(nb,46);
+      parts.push(lh,e.data); central.push(cd); offset+=lh.length+size;
+    });
+    var cdSize=central.reduce(function(a,c){return a+c.length;},0);
+    var eo=new Uint8Array(22), ev=new DataView(eo.buffer);
+    ev.setUint32(0,0x06054b50,true); ev.setUint16(8,entries.length,true); ev.setUint16(10,entries.length,true);
+    ev.setUint32(12,cdSize,true); ev.setUint32(16,offset,true);
+    var out=new Uint8Array(offset+cdSize+22), p=0;
+    parts.forEach(function(b){ out.set(b,p); p+=b.length; });
+    central.forEach(function(b){ out.set(b,p); p+=b.length; });
+    out.set(eo,p); return out;
+  }
+  function esc(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+  function run(t){ return '<w:r><w:rPr><w:rtl/></w:rPr><w:t xml:space="preserve">'+esc(t)+'</w:t></w:r>'; }
+  function fillCell(tc,t){ var i=tc.lastIndexOf("</w:p>"); return i<0?tc:tc.slice(0,i)+run(t)+tc.slice(i); }
+  function cellMap(d){ return [
+    [0,0,1,d.bldg],[0,0,3,d.floor],[0,0,5,d.unit],[0,0,7,d.model],[0,0,9,d.dir],
+    [0,1,1,d.rooms],[0,1,3,d.area],[0,1,5,d.balcony],[0,1,7,d.parking],
+    [1,0,1,d.estimate],[1,0,3,d.equity],
+    [2,0,1,d.b1name],[2,0,2,d.b2name],[2,1,1,d.b1id],[2,1,2,d.b2id],
+    [2,2,1,d.address],[2,3,1,d.phone],[2,4,1,d.email]]; }
+  function patch(xml,d){
+    var bs=xml.indexOf("<w:body>"), be=xml.lastIndexOf("</w:body>");
+    if(bs<0||be<0) throw new Error("לא נמצא גוף המסמך בתבנית");
+    var body=xml.slice(bs,be), re=/<w:tbl>[\s\S]*?<\/w:tbl>/g, tbls=[], m;
+    while((m=re.exec(body))) tbls.push({start:m.index,end:m.index+m[0].length,text:m[0]});
+    if(tbls.length<3) throw new Error("התבנית מכילה "+tbls.length+" טבלאות במקום 3");
+    var by={}; cellMap(d).forEach(function(x){ (by[x[0]]=by[x[0]]||[]).push([x[1],x[2],x[3]]); });
+    for(var ti=tbls.length-1;ti>=0;ti--){
+      if(!by[ti]) continue;
+      var t=tbls[ti].text, rows=t.match(/<w:tr\b[\s\S]*?<\/w:tr>/g)||[], nr=rows.slice();
+      by[ti].forEach(function(rc){
+        var r=rc[0], c=rc[1], v=rc[2];
+        if(v===""||v==null||!nr[r]) return;
+        var cells=nr[r].match(/<w:tc>[\s\S]*?<\/w:tc>/g)||[];
+        if(!cells[c]) return;
+        var filled=fillCell(cells[c],v), seen=0;
+        nr[r]=nr[r].replace(/<w:tc>[\s\S]*?<\/w:tc>/g,function(mm){ return (seen++===c)?filled:mm; });
+      });
+      rows.forEach(function(o,i){ t=t.replace(o,nr[i]); });
+      body=body.slice(0,tbls[ti].start)+t+body.slice(tbls[ti].end);
+    }
+    if(d.date)       body=body.replace(/(<w:t[^>]*>)תאריך:_+(<\/w:t>)/,'$1תאריך: '+esc(d.date)+'$2');
+    if(d.agent)      body=body.replace(/מנהל המכירות: _+/,'מנהל המכירות: '+esc(d.agent)+' ');
+    if(d.agentPhone) body=body.replace(/טלפון נייד: _+/,'טלפון נייד: '+esc(d.agentPhone));
+    return xml.slice(0,bs)+body+xml.slice(be);
+  }
+  return {
+    readZip:readZip, writeZip:writeZip, esc:esc,
+    fillXml:function(tplBytes,d){
+      var entries=readZip(tplBytes);
+      var doc=entries.filter(function(e){ return e.name==="word/document.xml"; })[0];
+      if(!doc) throw new Error("לא נמצא word/document.xml בתבנית");
+      var xml=patch(new TextDecoder("utf-8").decode(doc.data),d);
+      return {entries:entries, docEntry:doc, xml:xml};
+    }
+  };
+})();
+
+/* ================= תצוגת המסמך כ-HTML ================= */
+function docToHtml(xml){
+  var bs=xml.indexOf("<w:body>"), body=xml.slice(bs, xml.lastIndexOf("</w:body>"));
+  var html="", pos=0;
+  var re=/<w:tbl>[\s\S]*?<\/w:tbl>|<w:p\b[\s\S]*?<\/w:p>/g, m;
+  function texts(s){ var out=""; var rr=/<w:t[^>]*>([^<]*)<\/w:t>/g, t; while((t=rr.exec(s))) out+=t[1]; return out; }
+  while((m=re.exec(body))){
+    var frag=m[0];
+    if(frag.slice(0,6)==="<w:tbl"){
+      var rows=frag.match(/<w:tr\b[\s\S]*?<\/w:tr>/g)||[];
+      html+="<table>";
+      rows.forEach(function(r){
+        html+="<tr>";
+        (r.match(/<w:tc>[\s\S]*?<\/w:tc>/g)||[]).forEach(function(c){ html+="<td>"+escH(texts(c))+"</td>"; });
+        html+="</tr>";
+      });
+      html+="</table>";
+    } else {
+      var t=texts(frag);
+      if(t.trim()) html+="<p>"+escH(t)+"</p>";
+    }
+  }
+  return html;
+}
+function escH(s){ return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+
+/* ================= הטמעת חתימה ב-DOCX ================= */
+function embedSignature(filled, pngBytes, signerLine){
+  var entries=filled.entries, xml=filled.xml;
+  /* 1) קובץ התמונה */
+  entries.push({name:"word/media/signature777.png", data:pngBytes});
+  /* 2) content types */
+  entries.forEach(function(e){
+    if(e.name==="[Content_Types].xml"){
+      var s=new TextDecoder("utf-8").decode(e.data);
+      if(s.indexOf('Extension="png"')<0) s=s.replace("</Types>",'<Default Extension="png" ContentType="image/png"/></Types>');
+      e.data=new TextEncoder().encode(s);
+    }
+    if(e.name==="word/_rels/document.xml.rels"){
+      var s2=new TextDecoder("utf-8").decode(e.data);
+      s2=s2.replace("</Relationships>",'<Relationship Id="rIdSig777" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/signature777.png"/></Relationships>');
+      e.data=new TextEncoder().encode(s2);
+    }
+  });
+  /* 3) החלפת שורת קו-החתימה בתמונה + שורת תיעוד */
+  var idx=xml.indexOf("________________________");
+  if(idx<0) throw new Error("לא נמצאה שורת החתימה בתבנית");
+  var ps=xml.lastIndexOf("<w:p ",idx); if(ps<0) ps=xml.lastIndexOf("<w:p>",idx);
+  var pe=xml.indexOf("</w:p>",idx)+6;
+  var drawing='<w:p><w:pPr><w:bidi/></w:pPr><w:r><w:drawing>'
+    +'<wp:inline xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" distT="0" distB="0" distL="0" distR="0">'
+    +'<wp:extent cx="1800000" cy="675000"/><wp:docPr id="777" name="signature"/>'
+    +'<a:graphic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">'
+    +'<a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture">'
+    +'<pic:pic xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture">'
+    +'<pic:nvPicPr><pic:cNvPr id="777" name="signature777.png"/><pic:cNvPicPr/></pic:nvPicPr>'
+    +'<pic:blipFill><a:blip xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" r:embed="rIdSig777"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill>'
+    +'<pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="1800000" cy="675000"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr>'
+    +'</pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing></w:r></w:p>'
+    +'<w:p><w:pPr><w:bidi/></w:pPr><w:r><w:rPr><w:rtl/><w:sz w:val="18"/><w:szCs w:val="18"/></w:rPr><w:t xml:space="preserve">'+DocxFill.esc(signerLine)+'</w:t></w:r></w:p>';
+  xml=xml.slice(0,ps)+drawing+xml.slice(pe);
+  filled.docEntry.data=new TextEncoder().encode(xml);
+  return DocxFill.writeZip(entries);
+}
+
+/* ================= לוגיקת הדף ================= */
+var token=new URLSearchParams(location.search).get("t")||"";
+var session=null, tplBytes=null, hasInk=false;
+
+function fail(t){ document.getElementById("loading").textContent=t; }
+
+function b64(bytes){
+  var s=""; for(var i=0;i<bytes.length;i+=0x8000) s+=String.fromCharCode.apply(null,bytes.subarray(i,i+0x8000));
+  return btoa(s);
+}
+
+Promise.all([
+  token
+    ? fetch(API+"?action=get&t="+encodeURIComponent(token)).then(function(r){ if(!r.ok) throw 0; return r.json(); })
+    : Promise.reject(0),
+  fetch(TPL_URL,{cache:"force-cache"}).then(function(r){ if(!r.ok) throw 0; return r.arrayBuffer(); })
+]).then(function(res){
+  session=res[0]; tplBytes=new Uint8Array(res[1]);
+  if(session.status==="signed"){ document.getElementById("loading").textContent="✅ הבקשה הזו כבר נחתמה. תודה!"; return; }
+  if(!session.payload){ fail("קישור לא תקין או שפג תוקפו."); return; }
+  var filled=DocxFill.fillXml(tplBytes, session.payload);
+  document.getElementById("aptline").textContent=(session.building||"")+" · דירה "+(session.unit||"")+" · "+(session.clientName||"");
+  document.getElementById("doc").innerHTML=docToHtml(filled.xml);
+  document.getElementById("loading").style.display="none";
+  document.getElementById("main").style.display="block";
+  initPad();
+}).catch(function(){ fail("לא הצלחנו לטעון את המסמך. ודאו שהקישור מלא ותקין, ונסו שוב."); });
+
+/* ---- canvas ---- */
+function initPad(){
+  var c=document.getElementById("pad"), ctx=c.getContext("2d");
+  function resize(){
+    var r=c.getBoundingClientRect();
+    c.width=r.width*2; c.height=r.height*2;
+    ctx.scale(2,2); ctx.lineWidth=2.2; ctx.lineCap="round"; ctx.strokeStyle="#1a2b6d";
+  }
+  resize();
+  var drawing=false,last=null;
+  function pos(ev){
+    var r=c.getBoundingClientRect(), p=ev.touches?ev.touches[0]:ev;
+    return {x:p.clientX-r.left, y:p.clientY-r.top};
+  }
+  function start(ev){ drawing=true; last=pos(ev); ev.preventDefault(); }
+  function move(ev){
+    if(!drawing) return;
+    var p=pos(ev);
+    ctx.beginPath(); ctx.moveTo(last.x,last.y); ctx.lineTo(p.x,p.y); ctx.stroke();
+    last=p; hasInk=true;
+    document.getElementById("send").disabled=false;
+    ev.preventDefault();
+  }
+  function end(){ drawing=false; }
+  c.addEventListener("mousedown",start); c.addEventListener("mousemove",move); window.addEventListener("mouseup",end);
+  c.addEventListener("touchstart",start,{passive:false}); c.addEventListener("touchmove",move,{passive:false}); c.addEventListener("touchend",end);
+  document.getElementById("clear").onclick=function(){
+    ctx.clearRect(0,0,c.width,c.height); hasInk=false;
+    document.getElementById("send").disabled=true;
+  };
+  document.getElementById("send").onclick=submit;
+}
+
+function submit(){
+  if(!hasInk) return;
+  var btn=document.getElementById("send"), msg=document.getElementById("msg");
+  btn.disabled=true; msg.className=""; msg.textContent="שולח…";
+  try{
+    var c=document.getElementById("pad");
+    var pngB64=c.toDataURL("image/png").split(",")[1];
+    var pngBytes=Uint8Array.from(atob(pngB64), function(ch){ return ch.charCodeAt(0); });
+    var now=new Date(), p2=function(n){return (n<10?"0":"")+n;};
+    var ts=p2(now.getDate())+"."+p2(now.getMonth()+1)+"."+now.getFullYear()+" "+p2(now.getHours())+":"+p2(now.getMinutes());
+    var line="נחתם דיגיטלית על ידי "+(session.clientName||"")+" בתאריך "+ts+", באמצעות קישור אישי שנשלח בוואטסאפ למספר "+(session.payload.phone||"");
+    var filled=DocxFill.fillXml(tplBytes, session.payload);
+    var bytes=embedSignature(filled, pngBytes, line);
+    var name=("בקשת הצטרפות חתומה - "+(session.building||"")+" יחידה "+(session.unit||"")+" - "+(session.clientName||"")).replace(/[\\\/:*?"<>|]/g,"-")+".docx";
+    var body=new URLSearchParams();
+    body.append("action","sign"); body.append("t",token);
+    body.append("docName",name); body.append("docx",b64(bytes));
+    fetch(API,{method:"POST",body:body})
+      .then(function(r){ if(!r.ok) throw 0; return r.json(); })
+      .then(function(){
+        var blob=new Blob([bytes],{type:DOCX_MIME});
+        var a=document.getElementById("dl");
+        a.href=URL.createObjectURL(blob); a.download=name;
+        document.getElementById("main").style.display="none";
+        document.getElementById("done").style.display="block";
+      })
+      .catch(function(){ msg.className="err"; msg.textContent="השליחה נכשלה — נסו שוב."; btn.disabled=false; });
+  }catch(e){ msg.className="err"; msg.textContent="שגיאה: "+e.message; btn.disabled=false; }
+}
+</script>
+</body>
+</html>
