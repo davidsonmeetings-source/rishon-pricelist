@@ -430,7 +430,7 @@ function pickUnit(id){
     +dr('שכ"ט עו"ד 1.1%',nis(d.law1))
     +dr('שכ"ט עו"ד תשלום ראשון 0.35%',nis(d.law2))
     +dr("מס רכישה — דירה יחידה", d.taxS?nis(d.taxS):"פטור")
-    +dr("מס רכישה — להשקעה",nis(d.taxI))+landRows(d)+financeRows(d)+jrBtn(d)+'</div>';
+    +dr("מס רכישה — להשקעה",nis(d.taxI))+landRows(d)+financeRows(d)+jrBtn(d)+naBtn(d)+'</div>';
   renderPlan();
   document.getElementById("sel").scrollIntoView({behavior:"smooth",block:"nearest"});
 }
@@ -499,7 +499,7 @@ function renderList(){
         +dr('שכ"ט עו"ד 1.1%',nis(d.law1))
         +dr('שכ"ט עו"ד תשלום ראשון 0.35%',nis(d.law2))
         +dr("מס רכישה — דירה יחידה", d.taxS?nis(d.taxS):"פטור")
-        +dr("מס רכישה — להשקעה",nis(d.taxI))+landRows(d)+financeRows(d)+jrBtn(d)+'</div>';
+        +dr("מס רכישה — להשקעה",nis(d.taxI))+landRows(d)+financeRows(d)+jrBtn(d)+naBtn(d)+'</div>';
     }
     return '<div class="row '+stk+'">'+head+det+'</div>';
   }).join("");
@@ -613,6 +613,16 @@ var DocxFill = (function(){
     var doc=entries.filter(function(e){ return e.name==="word/document.xml"; })[0];
     if(!doc) throw new Error("לא נמצא word/document.xml בתבנית");
     doc.data=new TextEncoder().encode(patch(new TextDecoder("utf-8").decode(doc.data),d));
+    return writeZip(entries);
+  },
+  /* מילוי גנרי לפי תגי «...» בתבנית — משמש את נספח א1 */
+  fillTags:function(tplBytes,map){
+    var entries=readZip(tplBytes);
+    var doc=entries.filter(function(e){ return e.name==="word/document.xml"; })[0];
+    if(!doc) throw new Error("לא נמצא word/document.xml בתבנית");
+    var xml=new TextDecoder("utf-8").decode(doc.data);
+    Object.keys(map).forEach(function(k){ xml=xml.split(k).join(esc(String(map[k]==null?"":map[k]))); });
+    doc.data=new TextEncoder().encode(xml);
     return writeZip(entries);
   }};
 })();
@@ -762,6 +772,154 @@ function jrSubmit(id){
               data.b1name, data.b1id, data.b2name, data.b2id,
               data.address, data.phone, data.email,
               data.agent, data.agentPhone, name ]);
+    })
+    .catch(function(e){ msg.className="jr-msg err"; msg.textContent="שגיאה: "+e.message; });
+}
+
+/* ================= נספח א1 — יצירת DOCX בדפדפן =================
+   אותו דפוס כמו בקשת הצטרפות: תבנית עם תגי «...», מילוי בדפדפן, הורדה.
+   שתי תבניות לפי מסלול. הקבועים משקפים את טאב "הגדרות" בגיליון נספח א1 —
+   שינוי שם מחייב עדכון גם כאן. */
+var NA_TPL_URL = { std:"assets/nispach-std.docx", grace:"assets/nispach-grace.docx" };
+var naTpl = { std:null, grace:null };
+var NA_T1 = 35000, NA_PCT2 = 0.10, NA_PCT3 = 0.10, NA_GRACE_CUM = 0.25;
+var NA_RLM = "‏"; /* מצמיד את ה-₪ שבתבנית לשמאל המספר */
+
+function naBtn(d){
+  if(d.status==="sold") return '';
+  if(!(d.landPrice>0)) return '';
+  return '<div style="border-top:1px dashed var(--line2);margin-top:7px;padding-top:7px;">'
+    +'<button class="jr-open" onclick="naOpen(\''+d.bld+'-'+d.unit+'\')">📄 צור נספח א1 — תשלומי קרקע</button></div>';
+}
+
+/* ---- הסכום במילים (זכר, נוסח טבלת ההכנה: "... שקלים חדשים בלבד") ---- */
+var NA_U=["","אחד","שניים","שלושה","ארבעה","חמישה","שישה","שבעה","שמונה","תשעה"];
+var NA_TEENS={10:"עשרה",11:"אחד עשר",12:"שנים עשר",13:"שלושה עשר",14:"ארבעה עשר",15:"חמישה עשר",16:"שישה עשר",17:"שבעה עשר",18:"שמונה עשר",19:"תשעה עשר"};
+var NA_TENS={2:"עשרים",3:"שלושים",4:"ארבעים",5:"חמישים",6:"שישים",7:"שבעים",8:"שמונים",9:"תשעים"};
+var NA_H={1:"מאה",2:"מאתיים",3:"שלוש מאות",4:"ארבע מאות",5:"חמש מאות",6:"שש מאות",7:"שבע מאות",8:"שמונה מאות",9:"תשע מאות"};
+var NA_TH={1:"אלף",2:"אלפיים",3:"שלושת אלפים",4:"ארבעת אלפים",5:"חמשת אלפים",6:"ששת אלפים",7:"שבעת אלפים",8:"שמונת אלפים",9:"תשעת אלפים",10:"עשרת אלפים"};
+function naW999(n){
+  if(n===0) return "אפס";
+  var a=[], h=Math.floor(n/100), r=n%100;
+  if(h>0) a.push(NA_H[h]);
+  if(r>=10&&r<=19) a.push(NA_TEENS[r]);
+  else { var t=Math.floor(r/10), u=r%10; if(t>0)a.push(NA_TENS[t]); if(u>0)a.push(NA_U[u]); }
+  if(a.length===1) return a[0];
+  return a.slice(0,-1).join(" ")+" ו"+a[a.length-1];
+}
+function naWords(n){
+  n=Math.round(n);
+  var m=Math.floor(n/1e6), t=Math.floor((n%1e6)/1000), r=n%1000, p=[];
+  if(m===1)p.push("מיליון"); else if(m===2)p.push("שני מיליון"); else if(m>2)p.push(naW999(m)+" מיליון");
+  if(t>=1&&t<=10)p.push(NA_TH[t]); else if(t>10)p.push(naW999(t)+" אלף");
+  if(r>0)p.push(naW999(r));
+  return p.join(" ")+" שקלים חדשים בלבד";
+}
+
+function naMoney(n){ return Math.round(n).toLocaleString("en-US"); }
+
+/* לוח התשלומים לפי מסלול: זהה לנוסחאות בגיליון נספח א1 */
+function naCalc(d,isGrace){
+  var land=Math.round(d.landPrice), t2, t3;
+  if(isGrace){
+    var g=graceCalc(d).total;
+    t2=Math.round(NA_PCT2*g)-NA_T1;
+    t3=Math.round(NA_GRACE_CUM*g)-Math.round(NA_PCT2*g);
+  } else {
+    t2=Math.round(NA_PCT2*d.price)-NA_T1;
+    t3=Math.round(NA_PCT3*d.price);
+  }
+  return { land:land, t2:t2, t3:t3, t4:land-NA_T1-t2-t3, words:naWords(land) };
+}
+
+function naPrevHtml(d,isGrace){
+  var c=naCalc(d,isGrace);
+  return 'עלות החלק בקרקע: <b>'+nis(c.land)+'</b><br>'
+    +'ת1: '+nis(NA_T1)+' · ת2: '+nis(c.t2)+' · ת3: '+nis(c.t3)+' · ת4 (יתרה): <b>'+nis(c.t4)+'</b>';
+}
+function naPreview(id){
+  var d=DATA.filter(function(x){return x.bld+"-"+x.unit===id;})[0];
+  var el=document.getElementById("na_prev");
+  if(d&&el) el.innerHTML=naPrevHtml(d, jrGet("na_track")==="grace");
+}
+
+function naOpen(id){
+  var d=DATA.filter(function(x){return x.bld+"-"+x.unit===id;})[0];
+  if(!d) return;
+  var bn=d.bld==1?BUILDING1_NAME:BUILDING2_NAME;
+  var f=function(lbl,fid,ph){
+    return '<label class="jr-f"><span>'+lbl+'</span><input id="'+fid+'" placeholder="'+jrEsc(ph||"")+'"></label>';
+  };
+  var html='<div class="jr-box" onclick="event.stopPropagation()">'
+    +'<div class="jr-head"><b>נספח א1 — תשלומי קרקע</b><button class="jr-x" onclick="naClose()">✕</button></div>'
+    +'<div class="jr-apt">'+bn+' · דירה '+d.unit+' · קומה '+d.floor+' · '+d.rooms+' חד\' · אמדן: '+nis(d.price)
+    +(d.status==="hold"?'<br><b style="color:#b45309">⚠️ הדירה מסומנת "שמור" — ודאו שזה הלקוח הנכון</b>':'')+'</div>'
+    +'<label class="jr-f jr-wide"><span>מסלול</span><select id="na_track" onchange="naPreview(\''+id+'\')">'
+    +'<option value="std">ריבית שוטפת — 20% מהאמדן</option>'
+    +'<option value="grace">גרייס מלא — 25% מאמדן כולל ריבית</option></select></label>'
+    +'<div class="jr-apt" id="na_prev">'+naPrevHtml(d,false)+'</div>'
+    +'<div class="jr-grid">'
+    +f("שם חותם 1","na_s1")+f("ת.ז. חותם 1","na_id1")
+    +f("שם חותם 2","na_s2","אם יש")+f("ת.ז. חותם 2","na_id2","אם יש")
+    +'</div>'
+    +'<label class="jr-f jr-wide"><span>תאריך חתימה (ריק = קו לחתימה ידנית)</span><input id="na_date" type="date"></label>'
+    +'<div class="jr-actions"><button class="jr-go" onclick="naSubmit(\''+id+'\')">צור נספח</button></div>'
+    +'<div class="jr-msg" id="na_msg"></div></div>';
+  var ov=document.createElement("div");
+  ov.className="jr-ov"; ov.id="na_ov"; ov.innerHTML=html;
+  ov.onclick=naClose;
+  document.body.appendChild(ov);
+  var first=document.getElementById("na_s1"); if(first) first.focus();
+}
+function naClose(){ var ov=document.getElementById("na_ov"); if(ov) ov.parentNode.removeChild(ov); }
+
+function naLoadTemplate(kind){
+  if(naTpl[kind]) return Promise.resolve(naTpl[kind]);
+  return fetch(NA_TPL_URL[kind],{cache:"force-cache"})
+    .then(function(r){
+      if(!r.ok) throw new Error("התבנית לא נמצאה ("+r.status+"). ודא ש-"+NA_TPL_URL[kind]+" קיים באתר.");
+      return r.arrayBuffer();
+    })
+    .then(function(ab){ naTpl[kind]=new Uint8Array(ab); return naTpl[kind]; });
+}
+
+function naSubmit(id){
+  var d=DATA.filter(function(x){return x.bld+"-"+x.unit===id;})[0];
+  var msg=document.getElementById("na_msg");
+  if(!d||!msg) return;
+  var s1=jrGet("na_s1"), id1=jrGet("na_id1"), s2=jrGet("na_s2"), id2=jrGet("na_id2");
+  if(!s1){ msg.className="jr-msg err"; msg.textContent="חובה למלא שם חותם 1."; return; }
+  if(!/^\d{5,9}$/.test(id1)){ msg.className="jr-msg err"; msg.textContent="ת.ז. חותם 1 לא תקינה."; return; }
+  if(s2 && !/^\d{5,9}$/.test(id2)){ msg.className="jr-msg err"; msg.textContent="ת.ז. חותם 2 לא תקינה."; return; }
+  var isGrace=jrGet("na_track")==="grace";
+  var dateRaw=jrGet("na_date"), dateStr="";
+  if(dateRaw){ var dp=dateRaw.split("-"); dateStr=dp[2]+"."+dp[1]+"."+dp[0]; }
+  msg.className="jr-msg"; msg.textContent="יוצר נספח…";
+
+  var c=naCalc(d,isGrace), bn=JR_BLD[d.bld];
+  var money=function(n){ return naMoney(n)+" "+NA_RLM; };
+  var map={ "«F1»":bn, "«F2»":d.floor, "«F3»":d.unit, "«F4»":d.rooms,
+    "«F14»":money(c.land), "«F19»":c.words,
+    "«M_01»":money(c.t2), "«M_011»":money(c.t3), "«F18»":money(c.t4),
+    "«S1»":s1, "«ID1»":id1, "«S2»":s2, "«ID2»":s2?id2:"",
+    "«DATE»":dateStr||"________________" };
+  var name=("נספח א1 - "+bn+" יחידה "+d.unit+" - "+s1+(isGrace?" (גרייס)":"")).replace(/[\\\/:*?"<>|]/g,"-")+".docx";
+
+  naLoadTemplate(isGrace?"grace":"std")
+    .then(function(tpl){
+      var bytes=DocxFill.fillTags(tpl,map);
+      var blob=new Blob([bytes],{type:"application/vnd.openxmlformats-officedocument.wordprocessingml.document"});
+      var url=URL.createObjectURL(blob);
+      var a=document.createElement("a");
+      a.href=url; a.download=name;
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      setTimeout(function(){ URL.revokeObjectURL(url); },10000);
+      msg.className="jr-msg ok";
+      msg.innerHTML="✅ הנספח ירד למכשיר:<br>"+jrEsc(name);
+      /* רישום באותו לוג של בקשות ההצטרפות — שם הקובץ מזהה שמדובר בנספח */
+      jrLog([ bn, d.unit, d.floor, d.type, d.dir, d.rooms, d.size, d.bal, d.pk,
+              d.price, NA_T1+c.t2+c.t3, (isGrace?"גרייס מלא 25%":"ריבית שוטפת 20%"), dateStr,
+              s1, id1, s2, id2, "", "", "", "", "", name ]);
     })
     .catch(function(e){ msg.className="jr-msg err"; msg.textContent="שגיאה: "+e.message; });
 }
