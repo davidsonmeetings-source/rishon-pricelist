@@ -579,7 +579,8 @@ var DocxFill = (function(){
     [0,1,1,d.rooms],[0,1,3,d.area],[0,1,5,d.balcony],[0,1,7,d.parking],
     [1,0,1,d.estimate],[1,0,3,d.equity],
     [2,0,1,d.b1name],[2,0,2,d.b2name],[2,1,1,d.b1id],[2,1,2,d.b2id],
-    [2,2,1,d.address],[2,3,1,d.phone],[2,4,1,d.email]]; }
+    [2,2,1,d.address],[2,3,1,d.phone],[2,4,1,d.email],
+    [2,2,2,d.b2address],[2,3,2,d.b2phone],[2,4,2,d.b2email]]; }
 
   function patch(xml,d){
     var bs=xml.indexOf("<w:body>"), be=xml.lastIndexOf("</w:body>");
@@ -653,7 +654,8 @@ var JR_LOG_ENTRY = "entry.1757391795";   // שדה יחיד שמקבל שורה 
 var JR_LOG_COLS = ["בניין","מס' יחידה","קומה","דגם","כיוון","מס' חדרים","שטח","מרפסת","חניות",
   "אמדן","הון עצמי","מסלול ★","תאריך החתימה ★",
   "שם רוכש א' ★","ת.ז. רוכש א' ★","שם רוכש ב' ★","ת.ז. רוכש ב' ★",
-  "כתובת","טלפון","דוא\"ל","מנהל מכירות","טלפון מנהל","שם הקובץ"];
+  "כתובת","טלפון","דוא\"ל","מנהל מכירות","טלפון מנהל","שם הקובץ",
+  "כתובת רוכש ב'","טלפון רוכש ב'","דוא\"ל רוכש ב'"];
 
 function jrLog(row){
   if(!JR_LOG_URL || !JR_LOG_ENTRY) return;
@@ -690,10 +692,11 @@ function jrOpen(id){
     +'<div class="jr-apt">'+bn+' · דירה '+d.unit+' · קומה '+d.floor+' · '+d.rooms+' חד\' · '+d.size+' מ"ר · טיפוס '+d.type+' · '+d.dir+'<br>'
     +'אמדן: '+nis(d.price)+'</div>'
     +'<div class="jr-grid">'
-    +f("שם רוכש א'","jr_b1name")+f("ת.ז. רוכש א'","jr_b1id")
-    +f("שם רוכש ב'","jr_b2name","אם יש")+f("ת.ז. רוכש ב'","jr_b2id","אם יש")
-    +f("כתובת","jr_address")+f("טלפון","jr_phone")
-    +f('דוא"ל',"jr_email")
+    +f("שם רוכש א'","jr_b1name")+f("שם רוכש ב'","jr_b2name","אם יש")
+    +f("ת.ז. רוכש א'","jr_b1id")+f("ת.ז. רוכש ב'","jr_b2id","אם יש")
+    +f("כתובת רוכש א'","jr_address")+f("כתובת רוכש ב'","jr_b2address","אם יש")
+    +f("טלפון רוכש א'","jr_phone")+f("טלפון רוכש ב'","jr_b2phone","אם יש")
+    +f('דוא"ל רוכש א\'',"jr_email")+f('דוא"ל רוכש ב\'',"jr_b2email","אם יש")
     +f("מנהל מכירות","jr_agent","",jrRecall("jr_agent"))
     +f("טלפון מנהל","jr_agentPhone","",jrRecall("jr_agentPhone"))
     +'</div>'
@@ -749,6 +752,7 @@ function jrSubmit(id){
     b1name:jrGet("jr_b1name"), b1id:jrGet("jr_b1id"),
     b2name:jrGet("jr_b2name"), b2id:jrGet("jr_b2id"),
     address:jrGet("jr_address"), phone:jrGet("jr_phone"), email:jrGet("jr_email"),
+    b2address:jrGet("jr_b2address"), b2phone:jrGet("jr_b2phone"), b2email:jrGet("jr_b2email"),
     agent:jrGet("jr_agent"), agentPhone:jrGet("jr_agentPhone")
   };
   var name=("בקשת הצטרפות - "+bn+" יחידה "+d.unit+" - "+data.b1name).replace(/[\\\/:*?"<>|]/g,"-")+".docx";
@@ -780,7 +784,8 @@ function jrSubmit(id){
               d.price, eq, (isGrace ? "גרייס מלא 25%" : "20% מהאמדן"), data.date,
               data.b1name, data.b1id, data.b2name, data.b2id,
               data.address, data.phone, data.email,
-              data.agent, data.agentPhone, name ]);
+              data.agent, data.agentPhone, name,
+              data.b2address, data.b2phone, data.b2email ]);
     })
     .catch(function(e){ msg.className="jr-msg err"; msg.textContent="שגיאה: "+e.message; });
 }
@@ -928,7 +933,7 @@ function naSubmit(id){
       /* רישום באותו לוג של בקשות ההצטרפות — שם הקובץ מזהה שמדובר בנספח */
       jrLog([ bn, d.unit, d.floor, d.type, d.dir, d.rooms, d.size, d.bal, d.pk,
               d.price, NA_T1+c.t2+c.t3, (isGrace?"גרייס מלא 25%":"ריבית שוטפת 20%"), dateStr,
-              s1, id1, s2, id2, "", "", "", "", "", name ]);
+              s1, id1, s2, id2, "", "", "", "", "", name, "", "", "" ]);
     })
     .catch(function(e){ msg.className="jr-msg err"; msg.textContent="שגיאה: "+e.message; });
 }
